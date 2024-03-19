@@ -1,0 +1,11 @@
+<network>
+  <name>NETWORKNAME</name>
+  <forward mode='route'/>
+  <bridge name='BRIDGENAME'/>
+  <ip address='ROUTERIP' netmask='NETMASK'>
+    <dhcp>
+      <range start='HOSTIPSTART' end='HOSTIPEND'/>
+    </dhcp>
+  </ip>
+</network>
+

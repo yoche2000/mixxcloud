@@ -1,0 +1,6 @@
+<network>
+  <name>NETWORKNAME</name>
+  <forward mode='bridge'/>
+  <bridge name='BRIDGENAME'/>
+</network>
+
