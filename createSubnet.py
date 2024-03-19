@@ -78,14 +78,15 @@ routeID = "RT_"+ tenantID + "_" + subnetID
 '''
 Creating Bridge using bridge.py
 '''
-'''
+bridgeID = "BR_" + tenantID + "_" + subnetID
 bridge.newBridge(bridgeID)
 bridge.showBridges(bridgeID)
-print("bridgeID:", bridgeID)
-
-## rollback
-bridge.rmBridge(bridgeID)
+print("Bridge created.\nbridgeID:", bridgeID)
 '''
+## rollback
+'''
+## bridge.rmBridge(bridgeID)
+
 
 
 '''
@@ -97,7 +98,10 @@ networkID = "NW_" + tenantID + "_" + subnetID
 libnet.newNet(networkID, bridgeID, n_cidr)
 libnet.showNet(networkID)
 bridge.showBridges(bridgeID)
-libnet.rmNet(networkID)
+'''
+rollback
+'''
+## libnet.rmNet(networkID)
 
 
 '''
