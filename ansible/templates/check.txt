@@ -1,0 +1,23 @@
+runcmd:
+  - |
+    #!/bin/bash
+    # Iterate over each network interface
+    sudo systemctl restart systemd-resolved
+    sudo systemctl restart systemd-networkd
+    echo "Systemd-resolved & Systemd-networkd have been restarted.."
+    sudo mkdir -p /run/systemd/resolve/netif
+    sudo chown systemd-resolve:systemd-resolve /run/systemd/resolve/netif
+    sudo chmod 755 /run/systemd/resolve/netif
+    echo "netif directory, permissions and users have been created and added.."
+    for iface in $(ip link show | grep '^[0-9]' | awk -F: '{print $2}' | tr -d ' '); do
+        # Check if the interface is down
+        if ! ip addr show $iface up | grep -q UP; then
+          echo "Interface $iface is down. Bringing it up and running dhclient..."
+          # Bring the interface up
+          ip link set $iface up
+          # Run dhclient on the interface
+          timeout 10s dhclient $iface
+        else
+          echo "Interface $iface is already up."
+        fi
+    done

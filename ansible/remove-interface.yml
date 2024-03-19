@@ -1,0 +1,32 @@
+---
+- name: Removes the Interface from the VM
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Shutdown VM
+      virt:
+        name: "{{ item.vm_name }}"
+        command: shutdown
+      loop: "{{ vms }}"
+      become: yes
+    
+    # Create disk images
+    - name: Redefine Updated Template
+      virt:
+        name: "{{ item.vm_name }}"
+        command: define
+        xml: "{{ lookup('template', 'templates/VM_template.xml.j2') }}"
+      loop: "{{ vms }}"
+      become: yes
+    
+    - name: Echoss
+      command: echo "{{ lookup('template', 'templates/VM_template.xml.j2') }}"
+      loop: "{{ vms }}"
+
+    - name: Restart VM
+      virt:
+          name: "{{ item.vm_name }}"
+          command: create
+      loop: "{{ vms }}"
+      become: yes

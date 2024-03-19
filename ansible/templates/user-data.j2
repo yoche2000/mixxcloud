@@ -1,0 +1,15 @@
+#cloud-config
+hostname: "{{ item.vm_name }}"
+disable_root: false
+users:
+- default
+- name: root
+  lock_passwd: false
+  plain_text_passwd: root
+- name: ubuntu
+  lock_passwd: false
+  plain_text_passwd: ubuntu
+  sudo: ALL=(ALL) NOPASSWD:ALL
+ssh_pwauth: true
+
+

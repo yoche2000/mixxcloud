@@ -1,0 +1,79 @@
+Error:
+SpecialVM dhclient[1269]: DHCPDISCOVER on enp2s0 to 255.255.255.255 port 67 interval 5 (xid=0xb383e177)
+Mar  4 00:53:52 SpecialVM dhclient[1269]: DHCPOFFER of 192.168.1.110 from 192.168.1.1
+Mar  4 00:53:52 SpecialVM dhclient[1269]: DHCPREQUEST for 192.168.1.110 on enp2s0 to 255.255.255.255 port 67 (xid=0x77e183b3)
+Mar  4 00:53:52 SpecialVM dhclient[1269]: DHCPACK of 192.168.1.110 from 192.168.1.1 (xid=0xb383e177)
+Mar  4 00:53:52 SpecialVM systemd-resolved[560]: Failed to save link data /run/systemd/resolve/netif/3: Permission denied
+
+Observations:
+1. DHCLIENT is able to allocate the IP.
+2. systemd-resolved is facing the error when trying to save link data in /run/systemd/resolve/netif/3
+3. More confined logs can be found using: journalctl -u systemd-resolved
+
+Possible Mitigations Thoughts:
+- sudo systemctl restart systemd-resolved
+- sudo systemctl restart systemd-networkd
+- Creation of directory /run/systemd/resolve/netif , add permissions and ownership as below.
+
+User Data for now:
+#!/bin/bash
+# Iterate over each network interface
+sudo systemctl restart systemd-resolved
+sudo systemctl restart systemd-networkd
+echo "Systemd-resolved & Systemd-networkd have been restarted.."
+sudo mkdir -p /run/systemd/resolve/netif
+sudo chown systemd-resolve:systemd-resolve /run/systemd/resolve/netif
+sudo chmod 755 /run/systemd/resolve/netif
+echo "netif directory, permissions and users have been created and added.."
+for iface in $(ip link show | grep '^[0-9]' | awk -F: '{print $2}' | tr -d ' '); do
+    # Check if the interface is down
+    if ! ip addr show $iface up | grep -q UP; then
+    echo "Interface $iface is down. Bringing it up and running dhclient..."
+    # Bring the interface up
+    ip link set $iface up
+    # Run dhclient on the interface
+    dhclient $iface
+    else
+    echo "Interface $iface is already up."
+    fi
+done
+
+Before & After were same:
+    root@SpecialVM:/run/systemd/resolve# stat -c %a netif/
+    755
+
+    root@SpecialVM:/run/systemd/resolve# ls -la netif/
+    total 0
+    drwxr-xr-x 2 root            root             40 Mar  4 02:59 .
+    drwxr-xr-x 3 systemd-resolve systemd-resolve 120 Mar  4 03:00 ..
+
+-------------------
+
+Good Logs:
+
+Mar  4 03:41:13 SpecialVMS cloud-init[1250]: Systemd-resolved & Systemd-networkd have been restarted..
+Mar  4 03:41:13 SpecialVMS systemd-timesyncd[494]: Network configuration changed, trying to establish connection.
+Mar  4 03:41:13 SpecialVMS systemd-timesyncd[494]: Network configuration changed, trying to establish connection.
+Mar  4 03:41:13 SpecialVMS systemd-networkd[1259]: enp1s0: DHCPv4 address 192.168.1.141/24 via 192.168.1.1
+Mar  4 03:41:13 SpecialVMS systemd-timesyncd[494]: Network configuration changed, trying to establish connection.
+Mar  4 03:41:13 SpecialVMS systemd-timesyncd[494]: Network configuration changed, trying to establish connection.
+Mar  4 03:41:13 SpecialVMS systemd-timesyncd[494]: Network configuration changed, trying to establish connection.
+Mar  4 03:41:13 SpecialVMS systemd-timesyncd[494]: Network configuration changed, trying to establish connection.
+Mar  4 03:41:13 SpecialVMS systemd[1]: Finished Wait for Network to be Configured.
+Mar  4 03:41:13 SpecialVMS cloud-init[1250]: netif directory, permissions and users have been created and added..
+Mar  4 03:41:13 SpecialVMS cloud-init[1250]: Interface lo is already up.
+Mar  4 03:41:13 SpecialVMS cloud-init[1250]: Interface enp1s0 is already up.
+Mar  4 03:41:13 SpecialVMS cloud-init[1250]: Interface enp2s0 is down. Bringing it up and running dhclient...
+Mar  4 03:41:13 SpecialVMS systemd-networkd[1259]: enp2s0: Link UP
+Mar  4 03:41:13 SpecialVMS systemd-networkd[1259]: enp2s0: Gained carrier
+Mar  4 03:41:13 SpecialVMS systemd-timesyncd[494]: Network configuration changed, trying to establish connection.
+Mar  4 03:41:13 SpecialVMS dhclient[1280]: DHCPDISCOVER on enp2s0 to 255.255.255.255 port 67 interval 3 (xid=0xc6dc5c17)
+Mar  4 03:41:15 SpecialVMS systemd-networkd[1259]: enp2s0: Gained IPv6LL
+Mar  4 03:41:15 SpecialVMS systemd-timesyncd[494]: Network configuration changed, trying to establish connection.
+Mar  4 03:41:16 SpecialVMS dhclient[1280]: DHCPDISCOVER on enp2s0 to 255.255.255.255 port 67 interval 8 (xid=0xc6dc5c17)
+Mar  4 03:41:16 SpecialVMS dhclient[1280]: DHCPOFFER of 192.168.2.173 from 192.168.2.1
+Mar  4 03:41:16 SpecialVMS dhclient[1280]: DHCPREQUEST for 192.168.2.173 on enp2s0 to 255.255.255.255 port 67 (xid=0x175cdcc6)
+Mar  4 03:41:16 SpecialVMS dhclient[1280]: DHCPACK of 192.168.2.173 from 192.168.2.1 (xid=0xc6dc5c17)
+Mar  4 03:41:16 SpecialVMS systemd-timesyncd[494]: Network configuration changed, trying to establish connection.
+Mar  4 03:41:16 SpecialVMS systemd-resolved[1256]: enp2s0: Bus client set DNS server list to: 192.168.2.1
+Mar  4 03:41:16 SpecialVMS dhclient[1280]: bound to 192.168.2.173 -- renewal in 19409 seconds.

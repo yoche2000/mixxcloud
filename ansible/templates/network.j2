@@ -1,0 +1,12 @@
+network:
+  version: 2
+  ethernets:
+{% for iface in item.interfaces %}
+    {{ iface.iface_name }}:
+{% if iface.dhcp is defined %}
+      dhcp4: {{ iface.dhcp }}
+{% endif %}
+{% if iface.gateway is defined %}
+      gateway4: {{ iface.gateway }}
+{% endif %}
+{% endfor %}
