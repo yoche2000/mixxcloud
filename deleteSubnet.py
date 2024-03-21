@@ -42,8 +42,16 @@ except NameError:
 
 ## if tenantID exist -> yes
 ## if vpcID under tenantID -> yes
-## if subneID in vpcID -> no
-## if CIDR in vpc range and unused
+## if subneID in vpcID -> yes
+
+
+
+'''
+detatch router from network
+'''
+## intDetatch(routerID, networkID)
+
+
 
 
 '''

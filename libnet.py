@@ -1,11 +1,10 @@
 import os
 import ipaddress
+import subprocess
 
 def newNet (networkID, bridgeID, cidr):
     template_path = '/etc/libvirt/qemu/networks/subnets/subnet_template.xml'
     newpath = '/etc/libvirt/qemu/networks/subnets/' + networkID + '.xml'
-    print(newpath)
-
     netmask = cidr.netmask
     hosts = list(cidr.hosts())
 
@@ -21,7 +20,6 @@ def newNet (networkID, bridgeID, cidr):
         
         for key in v.keys():
             data = data.replace(key, str(v[key]))
-        print(data)
 
     f = open(newpath, 'w')
     f.write(data)
@@ -40,5 +38,11 @@ def rmNet(networkID):
     os.system("sudo virsh net-destroy "+networkID)
 
 
+def isRunning(networkID):
+    t = subprocess.check_output("sudo virsh net-list --all", shell=True)
+    if networkID in str(t):
+        return True
+    else:
+        return False
 
 

@@ -65,13 +65,12 @@ Verifying subnet
 
 
 
-
 '''
-Getting routerID of VPC from  
+Verify Router is running
 '''
 routeID = "RT_"+ tenantID + "_" + subnetID
 ## verify router VM running
-## routerID = getRouterID(vpcID) -> routerID
+## vmRunning(routerID)
 
 
 
@@ -79,9 +78,12 @@ routeID = "RT_"+ tenantID + "_" + subnetID
 Creating Bridge using bridge.py
 '''
 bridgeID = "BR_" + tenantID + "_" + subnetID
-bridge.newBridge(bridgeID)
-bridge.showBridges(bridgeID)
-print("Bridge created.\nbridgeID:", bridgeID)
+if bridge.isRunning(bridgeID):
+    print("Bridge", bridgeID, "exists.")
+else:
+    bridge.newBridge(bridgeID)
+    print("Bridge created, bridgeID:", bridgeID)
+
 '''
 ## rollback
 '''
@@ -89,15 +91,17 @@ print("Bridge created.\nbridgeID:", bridgeID)
 
 
 
+
 '''
 networkID = createNetwork(bridgeID, CIDR)
 '''
 
-bridgeID = "BR_" + tenantID + "_" + subnetID
 networkID = "NW_" + tenantID + "_" + subnetID
-libnet.newNet(networkID, bridgeID, n_cidr)
-libnet.showNet(networkID)
-bridge.showBridges(bridgeID)
+if libnet.isRunning(networkID):
+    print("Network", bridgeID, "exists.")
+else:
+    libnet.newNet(networkID, bridgeID, n_cidr)
+
 '''
 rollback
 '''
@@ -111,3 +115,8 @@ attachSubnettoRouter(routerID, networkID)
 
 
 
+
+
+'''
+Append entries in db
+'''
