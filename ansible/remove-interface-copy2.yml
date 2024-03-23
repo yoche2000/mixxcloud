@@ -1,0 +1,41 @@
+- name: Removes the Interface from the VM
+  hosts: localhost
+  become: yes
+  vars_files:
+    - vm_vars.yml
+
+  tasks:
+    #- name: Shut down the VM
+    #  command: virsh shutdown "{{ item.vm_name }}"
+    #  loop: "{{ vms }}"
+    #  become: yes
+    #  ignore_errors: yes
+      # Add a wait or retry mechanism here if necessary to ensure the VM is fully shut down.
+
+    - name: Dump VM XML configuration
+      shell: "virsh dumpxml {{ item.vm_name }} > /tmp/{{ item.vm_name }}.xml"
+      loop: "{{ vms }}"
+      become: yes
+
+    - name: Remove the interface from VM XML
+      xml:
+        path: "/tmp/{{ item.vm_name }}.xml"
+        xpath: "/domain/devices/interface[source/@network='L2']"
+        state: absent
+      loop: "{{ vms }}"
+      become: yes
+
+    - name: Redefine VM with modified XML
+      command: "virsh define /tmp/{{ item.vm_name }}.xml"
+      loop: "{{ vms }}"
+      become: yes
+    
+    - name: Pausing for 5 seconds
+      pause:
+        seconds: 10
+
+    - name: Start the VM again (optional)
+      command: virsh start "{{ item.vm_name }}"
+      loop: "{{ vms }}"
+      become: yes
+      # This step is optional based on whether you want to automatically restart the VM.

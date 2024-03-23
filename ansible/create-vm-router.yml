@@ -1,9 +1,9 @@
 ---
-- name: Create Guest VMs
+- name: Create Router VM
   hosts: localhost
   become: yes
   vars_files:
-    - vm_vars.yml
+    - router_vm_vars.yml
   
   tasks:
     # Create subdirectories for images
@@ -39,7 +39,7 @@
     # Create user-data file
     - name: Create user data files
       template:
-        src: user-data.j2
+        src: user-data-router.j2
         dest: "/var/lib/libvirt/images/{{ item.vm_name }}/user-data"
       loop: "{{ vms }}"
       become: yes

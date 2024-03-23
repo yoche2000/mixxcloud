@@ -1,39 +1,11 @@
 vms:
-  - vm_name: HW3_GuestVM1
+  - vm_name: ProjectGuestVM2
     vcpu: 2
     mem: 2048
     disk_size: 12G
     interfaces: 
-      - network_name: "{{ networks['Internet'].network_name }}"
+      - network_name: "L2"
         iface_name: enp1s0
-        dhcp: true
-        gateway: "{{ networks['Internet'].gateway }}"
-      - network_name: "{{ networks['L2'].network_name }}"
-        iface_name: enp2s0
+        ipaddress: 192.168.1.102/24
         dhcp: false
-      - network_name: "{{ networks['L3'].network_name }}"
-        iface_name: enp3s0
-        dhcp: true
-
-  - vm_name: HW3_GuestVM2
-    vcpu: 2
-    mem: 2048
-    disk_size: 12G
-    interfaces: 
-      - network_name: "{{ networks['Internet'].network_name }}"
-        iface_name: enp1s0
-        dhcp: true
-        gateway: "{{ networks['Internet'].gateway }}"
-  
-  - vm_name: HW3_GuestVM3
-    vcpu: 2
-    mem: 2048
-    disk_size: 12G
-    interfaces: 
-      - network_name: "{{ networks['L2'].network_name }}"
-        iface_name: enp1s0
-        dhcp: false
-      - network_name: "{{ networks['L3'].network_name }}"
-        iface_name: enp2s0
-        dhcp: true
-    
+        gateway: 192.168.1.1
