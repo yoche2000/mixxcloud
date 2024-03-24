@@ -43,6 +43,14 @@ class ROUTER_CRUD_Workflows:
         command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/create-vm-router.yml"]
         Commands.run_command(command)
         print(f"Router Creation for {vmName} has been completed..")
+    
+    @staticmethod
+    def run_ansible_playbook_for_attaching_subnet_to_vpc(vmName, vCPU, memory, diskSize, interfaces):
+        print(f"Attaching New Subnets To The VPC..Stablizing Router..")
+        VM_CRUD_Workflows.run_ansible_playbook_for_vm_deletion(vmName)
+        ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_creation(vmName, vCPU, memory, diskSize, interfaces)
+        print(f"Router is Stablized, subnets have been attached..")
+
 
 
 # Testing:
@@ -92,7 +100,7 @@ VM_CRUD_Workflows.run_ansible_playbook_for_vm_creation(vm_name, vcpu, mem, disk_
 
 """
 3. Deletion of VM
-VM_CRUD_Workflows.run_ansible_playbook_for_vm_deletion("RouterVM")
+VM_CRUD_Workflows.run_ansible_playbook_for_vm_deletion("ProjectGuestVM")
 """
 
 """
@@ -127,4 +135,33 @@ VM_CRUD_Workflows.run_ansible_playbook_to_attach_vm_to_network(vm_name, vcpu, me
 vm_name = "ProjectGuestVM"
 networkName = "L2-V1"
 VM_CRUD_Workflows.run_ansible_playbook_to_detach_vm_from_network(vm_name,networkName)
+"""
+
+"""
+6. Router Update: Attaching New Subnets
+
+vm_name = "RouterVM"
+vcpu = 2
+mem = 2048
+disk_size = "12G"
+interfaces = [
+    {
+        "network_name": "host-nat-network",
+        "iface_name": "enp1s0",
+        "ipaddress": "172.16.222.2/24",
+        "dhcp": False,
+        "gateway": "172.16.222.1",
+    },
+    {
+        "network_name": "L2",
+        "iface_name": "enp2s0",
+        "ipaddress": "192.168.1.1/24",
+    },
+    {
+        "network_name": "L2-V1",
+        "iface_name": "enp3s0",
+        "ipaddress": "192.168.2.1/24",
+    }
+]
+ROUTER_CRUD_Workflows.run_ansible_playbook_for_attaching_subnet_to_vpc(vm_name, vcpu, mem, disk_size, interfaces)
 """
