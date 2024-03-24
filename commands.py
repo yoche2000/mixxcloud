@@ -2,7 +2,7 @@ import subprocess
 import json
 from utilities import VMUtils
 
-class Workflows:
+class VM_CRUD_Workflows:
     def run_ansible_playbook_for_vm_creation(userID, vmName, vCPU, memory, diskSize, netWorkName, interfaceName, dhcpStatus, gatewayIP = None):
         """
         TODO:
@@ -58,7 +58,17 @@ class Workflows:
         print(process.stdout)
         if process.stderr:
             print("Error:", process.stderr)
+    
+    @staticmethod
+    def run_ansible_playbook_for_removing_subnet_to_vm(vmName):
+        command = ["ansible-playbook", "ansible/destroy-vm.yml", '-e', f"vm_name={vmName}"]
+        process = subprocess.run(command, capture_output=True, text=True)
+        
+        # Print the output and any errors
+        print(process.stdout)
+        if process.stderr:
+            print("Error:", process.stderr)
 
 # Assuming vms_config is defined as shown above
 # Workflows.run_ansible_playbook_for_vm_creation("HW3_GuestVM1111111", 2, 2048, "10G", "Internet", "enp1s0", True, "192.168.1.1")
-Workflows.run_ansible_playbook_for_removing_subnet_to_vm("HW3_GuestVM1111111","enp1s0")
+# VM_CRUD_Workflows.run_ansible_playbook_for_removing_subnet_to_vm("HW3_GuestVM1111111","enp1s0")

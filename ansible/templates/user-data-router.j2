@@ -1,4 +1,4 @@
-#cloud-config
+# cloud-config
 hostname: "{{ item.vm_name }}"
 disable_root: false
 users:
@@ -12,11 +12,15 @@ users:
   sudo: ALL=(ALL) NOPASSWD:ALL
 ssh_pwauth: true
 runcmd:
-  - |
-    # enable forwarding
-    echo 1 > /proc/sys/net/ipv4/ip_forward
+  - "00_EnableNAT.sh"
+  - "01_CreateNATRules.sh"
 
-    # NAT rules, e.g., eth0 be outward interface and eth1/2 be subnet interface
-    /sbin/iptables -t nat -A POSTROUTING -o enp1s0 -j MASQUERADE
-    /sbin/iptables -A FORWARD -i enp2s0 -o enp1s0 -j ACCEPT
-    /sbin/iptables -A FORWARD -i enp1s0 -o enp2s0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+#runcmd:
+#  - |
+#    # enable forwarding
+#    echo 1 > /proc/sys/net/ipv4/ip_forward
+#
+#    # NAT rules, e.g., eth0 be outward interface and eth1/2 be subnet interface
+#    /sbin/iptables -t nat -A POSTROUTING -o enp1s0 -j MASQUERADE
+#    /sbin/iptables -A FORWARD -i enp2s0 -o enp1s0 -j ACCEPT
+#    /sbin/iptables -A FORWARD -i enp1s0 -o enp2s0 -m state --state RELATED,ESTABLISHED -j ACCEPT

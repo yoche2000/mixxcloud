@@ -1,0 +1,26 @@
+- name: Terminates the VM from the host
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Shut down the VM
+      virt:
+        name: "{{ vm_name }}"
+        state: shutdown 
+      become: yes
+    
+    - name: Pausing for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: Undefining the VM
+      shell: "virsh undefine {{ vm_name }} --remove-all-storage"
+      become: yes
+
+    - name: Pausing for 3 seconds
+      pause:
+        seconds: 3
+
+    - name: Cleaning up the pending images directories on the host
+      command: "rm -rf /var/lib/libvirt/images/{{ vm_name }}"
+      become: yes
