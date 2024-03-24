@@ -78,7 +78,7 @@ interfaces = [
         "ipaddress": "192.168.1.1/24",
     }
 ]
-RouterConfiguration.createRouterVarsFile(vm_name, vcpu, mem, disk_size, interfaces)
+# RouterConfiguration.createRouterVarsFile(vm_name, vcpu, mem, disk_size, interfaces)
 
 
         

@@ -60,7 +60,7 @@ interfaces = [
         "gateway": "192.168.1.1",
     }
 ]
-VMConfiguration.createVMVarsFile(vm_name, vcpu, mem, disk_size, interfaces)
+# VMConfiguration.createVMVarsFile(vm_name, vcpu, mem, disk_size, interfaces)
 
 
         

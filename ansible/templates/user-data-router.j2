@@ -1,4 +1,4 @@
-# cloud-config
+#cloud-config
 hostname: "{{ item.vm_name }}"
 disable_root: false
 users:
@@ -12,15 +12,26 @@ users:
   sudo: ALL=(ALL) NOPASSWD:ALL
 ssh_pwauth: true
 runcmd:
-  - "00_EnableNAT.sh"
-  - "01_CreateNATRules.sh"
+  - |
+    # enable forwarding
+    echo 1 > /proc/sys/net/ipv4/ip_forward
 
-#runcmd:
-#  - |
-#    # enable forwarding
-#    echo 1 > /proc/sys/net/ipv4/ip_forward
-#
-#    # NAT rules, e.g., eth0 be outward interface and eth1/2 be subnet interface
-#    /sbin/iptables -t nat -A POSTROUTING -o enp1s0 -j MASQUERADE
-#    /sbin/iptables -A FORWARD -i enp2s0 -o enp1s0 -j ACCEPT
-#    /sbin/iptables -A FORWARD -i enp1s0 -o enp2s0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+    {% for vm in vms %}
+    {% set ns = namespace(output_iface='') %}
+    {% set input_ifaces = [] %}
+    {% for iface in vm.interfaces %}
+      {% if iface.network_name == "host-nat-network" %}
+        {% set ns.output_iface = iface.iface_name %}
+      {% else %}
+        {% set _ = input_ifaces.append(iface.iface_name) %}
+      {% endif %}
+    {% endfor %}
+    
+    {% for input_iface in input_ifaces %}
+    
+    /sbin/iptables -t nat -A POSTROUTING -o {{ ns.output_iface }} -j MASQUERADE
+    /sbin/iptables -A FORWARD -i {{ input_iface }} -o {{ ns.output_iface }} -j ACCEPT
+    /sbin/iptables -A FORWARD -i {{ ns.output_iface }} -o {{ input_iface }} -m state --state RELATED,ESTABLISHED -j ACCEPT
+    
+    {% endfor %}
+    {% endfor %}

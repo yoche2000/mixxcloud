@@ -1,3 +1,4 @@
+# Sample Use: ansible-playbook -i hosts destroy-vm.yml -e vm_name=ProjectGuestVM5
 - name: Terminates the VM from the host
   hosts: localhost
   become: yes

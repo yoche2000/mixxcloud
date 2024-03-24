@@ -1,74 +1,85 @@
 import subprocess
 import json
-from utilities import VMUtils
+from vmUtils import VMConfiguration
+from utils import Commands
+from routerUtils import RouterConfiguration
 
 class VM_CRUD_Workflows:
-    def run_ansible_playbook_for_vm_creation(userID, vmName, vCPU, memory, diskSize, netWorkName, interfaceName, dhcpStatus, gatewayIP = None):
-        """
-        TODO:
-        1. Add Validation for Network, Interface and DHCP Status by Querying the database to check if the network exists.
-        """
-        vms_config = VMUtils.setVMArguments(vmName, vCPU, memory, diskSize, netWorkName, interfaceName, dhcpStatus, gatewayIP)
-        # Serialize the VM configuration to a JSON string
-        extra_vars = json.dumps({"vms": vms_config})
-        
-        # Command to execute ansible-playbook with the JSON string as extra-vars
-        command = ["ansible-playbook", "ansible/create-vm.yml", "--extra-vars", extra_vars]
-        
-        # Run the command and capture output
-        process = subprocess.run(command, capture_output=True, text=True)
-        
-        # Print the output and any errors
-        print(process.stdout)
-        if process.stderr:
-            print("Error:", process.stderr)
-        
-        # TODO: Populate the below return value in database.Ex: UserID field should have the VM ID in the table.
-        # VM ID = UserID + VMName + vpcName
-        # return f"{userID}-{vmName}-{}"
-    
-    def run_ansible_playbook_for_router_vm_creation(vmName, vCPU = 2, memory = 2048, diskSize = "10G", netWorkName = "PublicNetworkOfHost", interfaceName = "PublicNetworkOfHostInterface", dhcpStatus = True, gatewayIP = "172.16.0.1"):
-        # HostNetwork, HostInterface and GatewayIP should be given from Deepak/ThomasWorkflows
-        vms_config = VMUtils.setVMArguments(vmName, vCPU, memory, diskSize, netWorkName, interfaceName, dhcpStatus, gatewayIP)
-        extra_vars = json.dumps({"vms": vms_config})
-            
-        # Command to execute ansible-playbook with the JSON string as extra-vars
-        command = ["ansible-playbook", "ansible/create-vm.yml", "--extra-vars", extra_vars]
-        
-        # Run the command and capture output
-        process = subprocess.run(command, capture_output=True, text=True)
-        
-        # Print the output and any errors
-        print(process.stdout)
-        if process.stderr:
-            print("Error:", process.stderr)
-
-    def run_ansible_playbook_for_removing_subnet_to_vm(vmName, interfaceNameToBeRemoved):
-        # HostNetwork, HostInterface and GatewayIP should be given from Deepak/ThomasWorkflows
-        vms_config = VMUtils.setArgumentsForRemoveInterfaceToVM(vmName, interfaceNameToBeRemoved)
-        extra_vars = json.dumps({"vms": vms_config})
-        print(extra_vars)
-        # Command to execute ansible-playbook with the JSON string as extra-vars
-        command = ["ansible-playbook", "ansible/remove-interface.yml", "--extra-vars", extra_vars]
-        
-        # Run the command and capture output
-        process = subprocess.run(command, capture_output=True, text=True)
-        
-        # Print the output and any errors
-        print(process.stdout)
-        if process.stderr:
-            print("Error:", process.stderr)
+    @staticmethod
+    def run_ansible_playbook_for_vm_creation(vmName, vCPU, memory, diskSize, interfaces):
+        print(f"VM Creation for {vmName} has been triggered..")
+        VMConfiguration.createVMVarsFile(vmName, vCPU, memory, diskSize, interfaces)
+        command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/create-vm.yml"]
+        Commands.run_command(command)
+        print(f"VM Creation for {vmName} has been completed..")
     
     @staticmethod
-    def run_ansible_playbook_for_removing_subnet_to_vm(vmName):
-        command = ["ansible-playbook", "ansible/destroy-vm.yml", '-e', f"vm_name={vmName}"]
-        process = subprocess.run(command, capture_output=True, text=True)
-        
-        # Print the output and any errors
-        print(process.stdout)
-        if process.stderr:
-            print("Error:", process.stderr)
+    def run_ansible_playbook_for_vm_deletion(vmName):
+        print(f"VM Deletion for {vmName} has been triggered..")
+        command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/destroy-vm.yml", "-e", f"vm_name={vmName}"]
+        Commands.run_command(command)
+        print(f"VM Deletion for {vmName} has been completed..")
+    
+    @staticmethod
+    def run_ansible_playbook_to_detach_vm_from_network(vmName, networkName):
+        print(f"VM Detach for {vmName} from Network {networkName} has been triggered..")
+        command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/detach-vm.yml", "-e", f"vm_name={vmName}", "-e", f"network_name={networkName}"]
+        Commands.run_command(command)
+        print(f"VM Detach for {vmName} from Network {networkName} has been completed..")
 
-# Assuming vms_config is defined as shown above
-# Workflows.run_ansible_playbook_for_vm_creation("HW3_GuestVM1111111", 2, 2048, "10G", "Internet", "enp1s0", True, "192.168.1.1")
-# VM_CRUD_Workflows.run_ansible_playbook_for_removing_subnet_to_vm("HW3_GuestVM1111111","enp1s0")
+
+class ROUTER_CRUD_Workflows:
+    @staticmethod
+    def run_ansible_playbook_for_router_creation(vmName, vCPU, memory, diskSize, interfaces):
+        print(f"Router Creation for {vmName} has been triggered..")
+        RouterConfiguration.createRouterVarsFile(vmName, vCPU, memory, diskSize, interfaces)
+        command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/create-vm-router.yml"]
+        Commands.run_command(command)
+        print(f"Router Creation for {vmName} has been completed..")
+
+
+# Testing:
+"""
+1: Create VPC => Router VM Creation
+
+vm_name = "RouterVM"
+vcpu = 2
+mem = 2048
+disk_size = "12G"
+interfaces = [
+    {
+        "network_name": "host-nat-network",
+        "iface_name": "enp1s0",
+        "ipaddress": "172.16.222.2/24",
+        "dhcp": False,
+        "gateway": "172.16.222.1",
+    },
+    {
+        "network_name": "L2",
+        "iface_name": "enp2s0",
+        "ipaddress": "192.168.1.1/24",
+    }
+]
+
+ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_creation(vm_name, vcpu, mem, disk_size, interfaces)
+"""
+
+"""
+2. VM Creation
+"""
+vm_name = "ProjectGuestVM"
+vcpu = 2
+mem = 2048
+disk_size = "12G"
+interfaces = [
+    {
+        "network_name": "L2",
+        "iface_name": "enp1s0",
+        "ipaddress": "192.168.1.102/24",
+        "dhcp": False,
+        "gateway": "192.168.1.1",
+    }
+]
+VM_CRUD_Workflows.run_ansible_playbook_for_vm_creation(vm_name, vcpu, mem, disk_size, interfaces)
+
+#VM_CRUD_Workflows.run_ansible_playbook_for_vm_deletion("RouterVM")

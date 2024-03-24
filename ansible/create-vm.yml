@@ -52,15 +52,6 @@
       loop: "{{ vms }}"
       become: yes
 
-    
-    #Create genisoimage...
-    #- name: Run genisoimage command
-    #  command: genisoimage -output "/var/lib/libvirt/images/{{ item.vm_name }}/{{ item.vm_name }}-cidata.iso" -volid cidata -joliet -rock meta-data user-data
-    #  args:
-    #    chdir: "/var/lib/libvirt/images/{{ item.vm_name }}"
-    #  with_items: "{{ vms }}"
-    #  become: yes
-
     # Create ISO disk image
     - name: Creating ISO disk image
       command: >

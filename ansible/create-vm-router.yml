@@ -61,7 +61,7 @@
       loop: "{{ vms }}"
       become: yes
     
-    #Define VM
+    # Define VM
     - name: Define VM
       virt:
         name: "{{ item.vm_name }}"
