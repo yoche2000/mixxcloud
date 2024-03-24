@@ -46,21 +46,5 @@ class VMConfiguration:
         print(f"VM Configuration File Is Created...")
 
 
-# Test Case:
-vm_name = "ProjectGuestVM2"
-vcpu = 2
-mem = 2048
-disk_size = "12G"
-interfaces = [
-    {
-        "network_name": "L2",
-        "iface_name": "enp1s0",
-        "ipaddress": "192.168.1.102/24",
-        "dhcp": False,
-        "gateway": "192.168.1.1",
-    }
-]
-# VMConfiguration.createVMVarsFile(vm_name, vcpu, mem, disk_size, interfaces)
-
 
         
