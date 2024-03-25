@@ -61,17 +61,27 @@ class VM:
     def connect_to_network(self, db, subnet_id: ObjectId | str, ip_address: str | None = None, default = False):
         if isinstance(subnet_id, str):
             subnet_id = ObjectId(subnet_id)
-        subnet = Subnet.find_by_id(subnet_id)
+        subnet = Subnet.find_by_id(db, subnet_id)
         if subnet:
             subnet_network = subnet.get_ipobj()
             
             if ip_address is None:
                 # fetch all ips currently in use
-                used_ips: List[str] = [item['ip_address'] for item in db.interface.find({"subnet_id": subnet.get_id()})]
-                available_ips = [ip for ip in next(subnet_network.hosts(),2) if ip not in [IPv4Address(ip4) for ip4 in used_ips]]
+                sb_nw = subnet_network.hosts()
+                used_ips: set[IPv4Address] = {IPv4Address(item['ip_address']) for item in db.interface.find({"subnet_id": subnet.get_id()})}
+                used_ips.add(IPv4Address(str(next(sb_nw))))
+                i = 2
+                while True:
+                    ip_address = next(sb_nw, i)
+                    if ip_address not in used_ips:
+                        break
+                    else:
+                        i = random.choice(range(1,10))
+                # available_ips = [ip for ip in [next(subnet_network.hosts(),2)] if ip not in used_ips]
                 
                 # choose a unique ip addr
-                ip_address = str(random.choice(available_ips))
+                print(ip_address)
+                ip_address = str(ip_address)
                 
             # generate a unique mac
             mac_address = IPUtils.generate_unique_mac(db)
@@ -86,6 +96,8 @@ class VM:
             self.interfaces.append(net_interface.get_id())
             self.save(db)
             
+            return net_interface
+            
     def disconnect_from_network(self, db, subnet_id: ObjectId | str):
         if isinstance(subnet_id, str):
             subnet_id = ObjectId(subnet_id)
@@ -96,8 +108,8 @@ class VM:
             self.save(db)
 
     def list_interfaces(self, db):
-        for dat in db.interface.find({'_id': {'$in': self.interfaces}}):
-            print(dat)
+        # for dat in db.interface.find({'_id': {'$in': self.interfaces}}):
+        #     print(dat)
             # Interface.from_()
         return [Interface.from_dict(data) for data in db.interface.find({'_id': {'$in': self.interfaces}})]
 
@@ -108,6 +120,7 @@ class VM:
             self._id = inserted_id
         else:
             db.vm.update_one({'_id': self._id}, {'$set': self.to_dict()})
+        return self
     
     def get_id(self):
         return self._id

@@ -1,6 +1,6 @@
 from typing import List
-from . import VPC
-from utils import Utils
+from .vpc_model import VPC
+from utils.utils import Utils
 
 class Tenant():
     def __init__(self, name: str, vpcs: List[str] | List[VPC] | None = None, _id=None):
@@ -9,8 +9,14 @@ class Tenant():
         self.vpcs = vpcs or []
 
     def create_vpc(self, db, name, region):
-        vpc = VPC(name, region)
-        self.add_vpc(db, vpc)
+        vpc = self.get_vpc_by_name(db, name)
+        if not vpc:
+            vpc = VPC(name, region)
+            vpc.save(db)
+            vpc.create_router(db)
+            self.vpcs.append(vpc.get_id())
+            self.save(db)
+        return vpc
 
     def add_vpc(self, db, vpc: VPC):
         self.vpcs.append(vpc.get_id())
@@ -19,15 +25,16 @@ class Tenant():
     def delete_vpc(self, db, vpc: VPC):
         vpc_id = vpc.get_id()
         vpc.delete(db)
-        self.vpcs.remove(vpc_id)
+        self.vpc.remove(vpc_id)
         self.save(db)
     
-    def list_vpcs(self, db):
-        return [VPC.from_dict(data) for data in  list(db.vpcs.find({'_id': {'$in': self.vpcs}}))]
+    def list_vpcs(self, db) -> List[VPC]:
+        return [VPC.from_dict(data) for data in  list(db.vpc.find({'_id': {'$in': self.vpcs}}))]
     
     def get_vpc_by_name(self, db, name):
-        data = db.vpcs.find_one({'name': name})
-        return VPC.from_dict(data)
+        data = db.vpc.find_one({'name': name})
+        if data:
+            return VPC.from_dict(data)
 
     def save(self, db):
         if self._id is None:
@@ -36,6 +43,7 @@ class Tenant():
             self._id = inserted_id
         else:
             db['tenant'].update_one({'_id': self._id}, {'$set': self.to_dict()})
+        return self
     
     def get_id(self):
         return self._id

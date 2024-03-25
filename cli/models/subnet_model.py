@@ -47,12 +47,13 @@ class Subnet:
             self._id = inserted_id
         else:
             db.subnet.update_one({'_id': self._id}, {'$set': self.to_dict()})
+        return self
     
     def get_id(self):
         return self._id
 
     def to_dict(self):
-        return {"subnet": self.subnet}
+        return {"subnet": self.subnet, "network_name": self.network_name, "bridge_name": self.bridge_name}
     
     def delete(self, db):
         if self._id is not None:
@@ -64,11 +65,11 @@ class Subnet:
 
     @staticmethod
     def from_dict(data):
-        return Subnet(data['name'], data['subnet_range'], data['subnet_mask'], _id = data['_id'])
+        return Subnet(data['subnet'], data['network_name'], data['bridge_name'], _id = data['_id'])
 
     @staticmethod
-    def find_by_name(db, name):
-        data = db.subnet.find_one({'name':name})
+    def find_by_name(db, network_name):
+        data = db.subnet.find_one({'network_name':network_name})
         if data:
             return Subnet.from_dict(data)
         return None

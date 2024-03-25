@@ -2,10 +2,48 @@
 # from models import  Tenant, VM
 from models.db_model import DB
 from models.vm_model import VM
+from models.tenant_model import Tenant
 from models.interface_model import Interface
+from models.subnet_model import Subnet
+from models.vpc_model import VPC
 # from models.vpc_model import VPC
 import traceback
 from utils.utils import Utils
+
+def print_resources(db):
+    print("Tenant ===========")
+    tenants = db.tenant.find({})
+    for tenant in tenants:
+        Tenant.from_dict(tenant).json()
+        print('--------------')
+        
+
+    print("VPC ===========")
+    vpcs = db.vpc.find({})
+    for vpc in vpcs:
+        VPC.from_dict(vpc).json()
+        print('--------------')
+    
+    print("Subnet ===========")
+    subnets = db.subnet.find({})
+    for subnet in subnets:
+        Subnet.from_dict(subnet).json()
+        print('--------------')
+        
+
+    print("VMS ===========")
+    vms = db.vm.find({})
+    for vm in vms:
+        VM.from_dict(vm).json()
+        print('--------------')
+        
+
+    print("Interfaces ===========")
+    interfaces = db.interface.find({})
+    for interface in interfaces:
+        Interface.from_dict(interface).json()
+        print('--------------')
+        
 
 def main():
     db1 = DB()
@@ -16,54 +54,33 @@ def main():
         exit(1)
     db = client['ln']
     
-    # vm = VM.find_by_name(db, 'VM1')
-    # name, vCPU, vMem, disk_size
-    # vm = VM('VM1', 1, 2, 10)
-    vm = VM.find_by_name(db, 'VM1')
-    # # db, ip_address, mac_address, network_mask, gateway
-    vm.add_interface(db, '192', 'mac_add', 'mask', 'gateway')
-    vm.add_interface(db, '168', 'mac_add', 'mask', 'gateway')
-    list_1 = vm.list_interfaces(db)
-    print(list_1)
-    vm.remove_interface(db, list_1[0].get_id())
-    vm.save(db)
-    # vm.json()
-    # vm.save(db)
     
+    if not Subnet.find_by_name(db, 'infra'):
+        print("Creating infra subnet")
+        infra_sb = Subnet('172.16.0.0/24', 'infra', 'lib_br').save(db)
 
-    # Utils.valid_ip_range('8.8.8.0','24')
-    # Utils.valid_ip_range('192.168.2.0','30')
-    # Utils.valid_ip_range('192.168.3.0','30')
-
-    # db_list = client.list_database_names()
-    # print("Databases available:")
-    # for db_name in db_list:
-    #     print(db_name)
-
-    # db = client['ln']
-    # collection_list = db.list_collection_names()
-    # print(f"Collections available in the database ln:")
-    # for collection_name in collection_list:
-    #     print(collection_name)
-
-    # # tent = Tenant("VPC5")
-    # # tent.save(db)
-
-    # # documents = db.tenant.find({"_id": Utils.id('65fcfa155490d356cd5d626f')})
+    if not Subnet.find_by_name(db, 'public'):
+        print("Creating public subnet")
+        public_sb = Subnet('10.10.10.0/24', 'public', 'br_pub').save(db)
     
-    # x = Tenant.find_by_id(db, "65fcfa155490d356cd5d626f")
-    # x.json()
-    # x.name = "test"
-    # x.save(db)
+    tenant = Tenant.find_by_name(db, 'Alfred')
+    if not Tenant.find_by_name(db, 'Alfred'):
+        tenant = Tenant('Alfred').save(db)
+    
+    vpc = tenant.get_vpc_by_name(db, 'vpc1')
+    if not vpc:
+        vpc: VPC = tenant.create_vpc(db, 'vpc1', 'east')
 
+    sb1 = vpc.create_subnet(db, '192.168.10.0/30', 'vm_net_1', 'br_net_1')
+    sb2 = vpc.create_subnet(db, '192.30.20.0/30', 'vm_net_2', 'br_net_2')
+    
+    vm = VM('VM1', 1, 1, 10).save(db)
 
-    # for doc in documents:
-    #     print("Hello")
-    #     tmp = Tenant.from_dict(doc)
-    #     print(tmp._id)
-    #     tmp.name = "new_name"
-    #     tmp.save()
-
+    
+    vm.connect_to_network(db, sb1.get_id(), default=True)
+    vm.connect_to_network(db, sb2.get_id())
+    
+    # print_resources(db)
 
 
 if __name__ == '__main__':

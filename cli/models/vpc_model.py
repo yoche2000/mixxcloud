@@ -12,22 +12,24 @@ from typing import List
 from .subnet_model import Subnet
 from .vm_model import VM
 from .interface_model import Interface
-from utils import Utils
+from utils.utils import Utils
 
 
 class VPCStatus(Enum):
-    CREATING = 1
-    RUNNING = 2
-    UPDATING = 3
-    DELETING = 4
+    UNDEFINED = 1
+    CREATING = 2
+    RUNNING = 3
+    UPDATING = 4
+    DELETING = 5
 
 class VPC:
-    def __init__(self, name, region, subnets = None, routerVM = None, _id = None):
+    def __init__(self, name, region, subnets = None, routerVM = None, status = VPCStatus.UNDEFINED.name, _id = None):
         self._id = _id
         self.name = name
         self.region = region
         self.subnets: List[str] = subnets or []
         self.routerVM = routerVM
+        self.status = VPCStatus[status]
 
     def add_subnet(self, db, subnet: Subnet):
         self.subnets.append(subnet.get_id())
@@ -49,8 +51,9 @@ class VPC:
         self.save(db)
         
         # add interface to router vm
-        router_vm: VM = VM.find_by_id(self.routerVM)
+        router_vm: VM = VM.find_by_id(db, self.routerVM)
         router_vm.connect_to_network(db, subnet.get_id())
+        return subnet
 
     def remove_subnet(self, db, subnet:str):
         data = db.subnet.find({'subnet': subnet})
@@ -72,6 +75,8 @@ class VPC:
         disk_size = 10
         router_vm = VM(name, vCPU, vMem, disk_size)
         router_vm.save(db)
+        sb = Subnet.find_by_name(db, 'infra')
+        router_vm.connect_to_network(db, sb.get_id(), default= True)
         self.routerVM = router_vm.get_id()
         self.save(db)
 
@@ -97,12 +102,13 @@ class VPC:
             self._id = inserted_id
         else:
             db.vpc.update_one({'_id': self._id}, {'$set': self.to_dict()})
+        return self
     
     def get_id(self):
         return self._id
 
     def to_dict(self):
-        return {"name": self.name, "region": self.region, "subnets": self.subnets}
+        return {"name": self.name, "region": self.region, "subnets": self.subnets, 'routerVM': self.routerVM, "status": self.status.name}
     
     def delete(self, db):
         if self._id is not None:
@@ -116,7 +122,8 @@ class VPC:
 
     @staticmethod
     def from_dict(data):
-        return VPC(data['name'], data['region'], data['subnets'], _id = data['_id'])
+        if data is None: return
+        return VPC(data['name'], data['region'], data['subnets'], data['routerVM'], status=data['status'], _id = data['_id'], )
 
     @staticmethod
     def find_by_name(db, name):

@@ -19,6 +19,7 @@ class Interface:
             self._id = inserted_id
         else:
             db.interface.update_one({'_id': self._id}, {'$set': self.to_dict()})
+        return self
     
     def get_id(self):
         return self._id
