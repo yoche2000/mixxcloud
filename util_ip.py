@@ -23,10 +23,12 @@ def weight_to_prob(ip_weight_list):
         result.append({ip:perc})
     return(result)
 
-'''
 ## weight_to_prob example
+'''
 ip_list = {"192.168.1.1":7,
            '192.168.1.2':3,
            '192.168.1.3':2}
+print(ip_list)
+print()
 print(weight_to_prob(ip_list))
 '''
