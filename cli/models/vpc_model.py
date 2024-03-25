@@ -11,6 +11,7 @@ from enum import Enum
 from typing import List
 from .subnet_model import Subnet
 from .vm_model import VM
+from .interface_model import Interface
 from utils import Utils
 
 
@@ -40,6 +41,29 @@ class VPC:
 
     def list_subnets(self, db) -> List[Subnet]:
         return list(db.subnet.find({'_id': {'$in': self.subnets}}))
+    
+    def create_subnet(self, db, subnet:str, network_name, bridge_name):
+        subnet: Subnet = Subnet(subnet, network_name, bridge_name)
+        subnet.save(db)
+        self.subnets.append(subnet.get_id())
+        self.save(db)
+        
+        # add interface to router vm
+        router_vm: VM = VM.find_by_id(self.routerVM)
+        router_vm.connect_to_network(db, subnet.get_id())
+
+    def remove_subnet(self, db, subnet:str):
+        data = db.subnet.find({'subnet': subnet})
+        if data:
+            subnet = Subnet.from_dict(data)
+            subnet.delete(db)
+            self.subnets.remove(subnet.get_id())
+            
+            interfaces_datas = db.interface.find({'subnet_id': subnet.get_id()})
+            if interfaces_datas:
+                for interfaces_data in interfaces_datas:
+                    connected_vm = VM.from_dict(db.vm.find({"_id": interfaces_data['instance_id']}))
+                    connected_vm.disconnect_from_network(db, subnet.get_id())
     
     def create_router(self, db):
         name = 'sample_name'

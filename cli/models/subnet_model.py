@@ -18,10 +18,10 @@ class SubnetStatus(Enum):
     STOPPED = 4
 
 class Subnet:
-    def __init__(self, subnet, network_id, bridge_id, sb_status = SubnetStatus.UNDEFINED.name, _id = None):
+    def __init__(self, subnet, network_name, bridge_name, sb_status = SubnetStatus.UNDEFINED.name, _id = None):
         self._id = _id
-        self.network_id = network_id #libvirt
-        self.bridge_id = bridge_id #brctl
+        self.network_name = network_name #libvirt
+        self.bridge_name = bridge_name #brctl
         
         # 192.168.2.0/24
         # 192.168.2.1 - GATEWAY
