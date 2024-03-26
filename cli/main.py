@@ -57,11 +57,11 @@ def main():
     
     if not Subnet.find_by_name(db, 'infra'):
         print("Creating infra subnet")
-        infra_sb = Subnet('172.16.0.0/24', 'infra', 'lib_br').save(db)
+        infra_sb = Subnet('172.16.0.0/12', 'host-nat-network', 'Tw1').save(db)
 
     if not Subnet.find_by_name(db, 'public'):
         print("Creating public subnet")
-        public_sb = Subnet('10.10.10.0/24', 'public', 'br_pub').save(db)
+        public_sb = Subnet('10.10.10.0/24', 'host-public-network', 'Tw2').save(db)
     
     tenant = Tenant.find_by_name(db, 'Alfred')
     if not Tenant.find_by_name(db, 'Alfred'):

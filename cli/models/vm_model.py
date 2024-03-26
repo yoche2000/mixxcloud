@@ -77,6 +77,7 @@ class VM:
                         break
                     else:
                         i = random.choice(range(1,10))
+                        ip_address = next(sb_nw, i)
                 # available_ips = [ip for ip in [next(subnet_network.hosts(),2)] if ip not in used_ips]
                 
                 # choose a unique ip addr
