@@ -1,7 +1,7 @@
 import subprocess
 import json
 from vmUtils import VMConfiguration
-from utils import Commands
+from southbound_utils import Commands
 from routerUtils import RouterConfiguration
 
 class VM_CRUD_Workflows:
