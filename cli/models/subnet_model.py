@@ -54,6 +54,15 @@ class Subnet:
     # @staticmethod
     # def create_subnet(db, subnet, network_name, bridge_name):
     def define_net(self, db):
+        if self.status == SubnetStatus.RUNNING:
+            print("Subnet is already running")
+            return True
+        if self.status == SubnetStatus.STARTING or self.status == SubnetStatus.UPDATING:
+            # don't update status since someother action is being performed on this object
+            print("Cannot update at his time")
+            return
+        if self.status == SubnetStatus.ERROR:
+            self.undefine_net(db)
         self.status = SubnetStatus.STARTING
         self.save(db)
         def success():
@@ -63,11 +72,18 @@ class Subnet:
             self.status = SubnetStatus.ERROR
             self.save(db)
         try:
-            SubnetController.createBridge(self.bridge_name, success=success, failure=failure)
+            SubnetController.define(self.network_name, self.bridge_name, success=success, failure=failure)
         except:
-            failure()
+            return False
+        return True
     
     def undefine_net(self, db):
+        if self.status == SubnetStatus.UNDEFINED:
+            return True
+        if self.status == SubnetStatus.STARTING or self.status == SubnetStatus.UPDATING:
+            # don't update status since someother action is being performed on this object
+            print("Cannot update at his time")
+            return 
         self.status = SubnetStatus.DELETING
         self.save(db)
         def success():
@@ -77,22 +93,17 @@ class Subnet:
             self.status = SubnetStatus.ERROR
             self.save(db)
         try:
-            SubnetController.rmBridge(self.bridge_name, success=success, failure=failure)
+            SubnetController.undefine(self.network_name, self.bridge_name, success=success, failure=failure)
         except:
-            failure()
+            return False
+        return True
 
-    def _define_libvirt_net(self):
-        pass
-    
-    def _define_brctl_net(self):
-        pass
+    def get_gateway_ip(self):
+        ip_addr = self._subnet.hosts()
+        return str(next(ip_addr))
 
-
-    def _undefine_libvirt_net(self):
-        pass
-    
-    def _undefine_brctl_net(self):
-        pass
+    def get_subnet_mask(self):
+        return str(self._subnet.netmask)
     
     def status(self):
         # TODO: Perform checks on the system
