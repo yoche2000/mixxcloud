@@ -23,18 +23,16 @@ class SubnetStatus(Enum):
 class SubnetType(Enum):
     DEFAULT = 1
     NAT = 2
-    
-
 
 class Subnet:
-    def __init__( self,
-                  subnet,
-                  network_name,
-                  bridge_name,
-                  status = SubnetStatus.UNDEFINED.name,
-                  type = SubnetType.DEFAULT.name,
-                  _id = None ):
-        
+    def __init__(self,
+                 subnet,
+                 network_name,
+                 bridge_name,
+                 status = SubnetStatus.UNDEFINED.name,
+                 subnet_type = SubnetType.DEFAULT.name,
+                 _id = None,
+                 ):
         self._id = _id
         self.network_name = network_name #libvirt
         self.bridge_name = bridge_name #brctl
@@ -46,10 +44,8 @@ class Subnet:
         self.subnet = subnet #192.168.2.0/24
         self._subnet: IPv4Network = ip_network(subnet)
         self.status = SubnetStatus[status]
-        # TODO: Add these fields
-        # self.ip_adress = 192.168.2.1 - GATEWAY
-        # self.mask = 255.255.255.0 - netmask
-        self.type = SubnetType[type]
+        self.subnet_type = SubnetType[subnet_type]
+        print(subnet_type, self.subnet_type, self.network_name)
     
     # @staticmethod
     # def create_subnet(db, subnet, network_name, bridge_name):
@@ -72,7 +68,12 @@ class Subnet:
             self.status = SubnetStatus.ERROR
             self.save(db)
         try:
-            SubnetController.define(self.network_name, self.bridge_name, success=success, failure=failure)
+            SubnetController.define(self.network_name, 
+                                    self.bridge_name,
+                                    cidr = self.subnet, 
+                                    nat_enabled = SubnetType.NAT == self.subnet_type, 
+                                    success=success, 
+                                    failure=failure)
         except:
             return False
         return True
@@ -93,7 +94,11 @@ class Subnet:
             self.status = SubnetStatus.ERROR
             self.save(db)
         try:
-            SubnetController.undefine(self.network_name, self.bridge_name, success=success, failure=failure)
+            SubnetController.undefine(self.network_name,
+                                      self.bridge_name,
+                                      nat_enabled = SubnetType.NAT == self.subnet_type, 
+                                      success=success,
+                                      failure=failure)
         except:
             return False
         return True
@@ -134,7 +139,7 @@ class Subnet:
         return {"subnet": self.subnet,
                 "network_name": self.network_name,
                 "bridge_name": self.bridge_name,
-                "type": self.type.name,
+                "type": self.subnet_type.name,
                 "status": self.status.name
                 }
     
@@ -152,7 +157,7 @@ class Subnet:
                       data['network_name'],
                       data['bridge_name'],
                       status=data['status'],
-                      type=data['type'],
+                      subnet_type=data['type'],
                       _id = data['_id'])
 
     @staticmethod

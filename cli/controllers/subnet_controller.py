@@ -1,13 +1,13 @@
 import os
 import subprocess
 import traceback
-
+from ipaddress import ip_network
 class SubnetController:
     @staticmethod
-    def define(network_name: str,bridge_name: str, success, failure):
+    def define(network_name: str, bridge_name: str,   success, failure, nat_enabled = False, cidr: str | None = None):
         try:
-            br = SubnetController.create_bridge(bridge_name)
-            nw = SubnetController.create_network(network_name)
+            br = nat_enabled or SubnetController.create_bridge(bridge_name)
+            nw = SubnetController.create_network(network_name, bridge_name, cidr, nat_enabled)
             if br and nw:
                 success()
             else:
@@ -27,14 +27,44 @@ class SubnetController:
         return True
 
     @staticmethod            
-    def create_network(network_name: str):
-        return True
+    def create_network(network_name: str, bridge_name: str, cidr: str, nat_enabled: bool):
+        try:
+            if nat_enabled:
+                template_path = './templates/libvirt_network_route.xml'
+            else:
+                template_path = './templates/libvirt_network_bridge.xml'
+            newpath = '/etc/libvirt/qemu/networks/subnets/' + network_name + '.xml'
+            
+            cidr = ip_network(cidr)
+            
+            options = {'NETWORKNAME': network_name,
+                    'BRIDGENAME': bridge_name,
+                    'ROUTERIP': cidr[1],
+                    'NETMASK': cidr.netmask,
+                    'HOSTIPSTART': cidr[2],
+                    'HOSTIPEND': cidr[-1]
+                    }
+            
+            with open(template_path, 'r') as file:
+                data = file.read()
+                for key in options.keys():
+                    data = data.replace(key, str(options[key]))
+            
+            with open(newpath, 'w') as out_file:
+                out_file.write(data)
+
+            os.system("sudo virsh net-define "+newpath)
+            os.system("sudo virsh net-start "+network_name)
+            return True
+        except:
+            traceback.print_exc()
+            return False
     
     @staticmethod
-    def undefine(network_name: str, bridge_name: str, success, failure):
+    def undefine(network_name: str, bridge_name: str, success, failure, nat_enabled = False):
         print(f"Undefine {network_name}")
         try:
-            br = SubnetController.destroy_bridge(bridge_name)
+            br = nat_enabled or SubnetController.destroy_bridge(bridge_name)
             nw = SubnetController.destory_network(network_name)
             if br and nw:
                 success()
@@ -55,8 +85,16 @@ class SubnetController:
         except:
             return True
     @staticmethod
-    def destory_network(bridge_name: str):
-        return True
+    def destory_network(network_name: str):
+        try:
+            path = '/etc/libvirt/qemu/networks/subnets/' + network_name + '.xml'
+            os.system("sudo rm " + path)
+            os.system("sudo virsh net-undefine " + network_name)
+            os.system("sudo virsh net-destroy " + network_name)
+            return True
+        except:
+            traceback.print_exc()
+            return False
     
     @staticmethod
     def check_resource_status():

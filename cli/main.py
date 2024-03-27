@@ -4,7 +4,7 @@ from models.db_model import DB
 from models.vm_model import VM
 from models.tenant_model import Tenant
 from models.interface_model import Interface
-from models.subnet_model import Subnet, SubnetStatus
+from models.subnet_model import Subnet, SubnetStatus, SubnetType
 from models.vpc_model import VPC
 # from models.vpc_model import VPC
 import traceback
@@ -62,9 +62,9 @@ def main():
     infra_sb = Subnet.find_by_name(db, HOST_NAT_NETWORK)
     if not infra_sb:
         print(f"Creating {HOST_NAT_NETWORK}")
-        infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME).save(db)
+        infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME, subnet_type = SubnetType.NAT.name).save(db)
     
-    if infra_sb.status != SubnetStatus.RUNNING:
+    if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
         print(f"Defining {HOST_NAT_NETWORK}")
         infra_sb.define_net(db)
 
@@ -73,12 +73,15 @@ def main():
         print(f"Creating {HOST_PUBLIC_NETWORK}")
         public_sb = Subnet(HOST_PUBLIC_SUBNET, HOST_PUBLIC_NETWORK, HOST_PUBLIC_BR_NAME).save(db)
     
-    if public_sb.status != SubnetStatus.RUNNING:
+    if public_sb.status != SubnetStatus.RUNNING and public_sb.status != SubnetStatus.ERROR:
         print(f"Defining {HOST_PUBLIC_NETWORK}")
         public_sb.define_net(db)
     
-    public_sb.undefine_net(db)
-    infra_sb.undefine_net(db)
+    # USE THIS COMMAND TO UNDEFINE
+    # public_sb.undefine_net(db)
+    # infra_sb.undefine_net(db)
+    
+    
     
     # tenant = Tenant.find_by_name(db, 'Alfred')
     # if not Tenant.find_by_name(db, 'Alfred'):
