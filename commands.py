@@ -56,7 +56,7 @@ class ROUTER_CRUD_Workflows:
 # Testing:
 """
 1: Create VPC => Router VM Creation
-
+"""
 vm_name = "RouterVM"
 vcpu = 2
 mem = 2048
@@ -65,9 +65,9 @@ interfaces = [
     {
         "network_name": "host-nat-network",
         "iface_name": "enp1s0",
-        "ipaddress": "172.16.222.2/24",
+        "ipaddress": "172.16.222.2/12",
         "dhcp": False,
-        "gateway": "172.16.222.1",
+        "gateway": "172.16.0.1",
     },
     {
         "network_name": "L2",
@@ -77,7 +77,7 @@ interfaces = [
 ]
 
 ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_creation(vm_name, vcpu, mem, disk_size, interfaces)
-"""
+
 
 """
 2. VM Creation
@@ -100,6 +100,8 @@ VM_CRUD_Workflows.run_ansible_playbook_for_vm_creation(vm_name, vcpu, mem, disk_
 
 """
 3. Deletion of VM
+
+
 VM_CRUD_Workflows.run_ansible_playbook_for_vm_deletion("ProjectGuestVM")
 """
 
@@ -148,9 +150,9 @@ interfaces = [
     {
         "network_name": "host-nat-network",
         "iface_name": "enp1s0",
-        "ipaddress": "172.16.222.2/24",
+        "ipaddress": "172.16.222.2/12",
         "dhcp": False,
-        "gateway": "172.16.222.1",
+        "gateway": "172.16.0.1",
     },
     {
         "network_name": "L2",

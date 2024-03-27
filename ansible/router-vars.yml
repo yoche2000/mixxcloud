@@ -6,12 +6,9 @@ vms:
   interfaces:
   - network_name: host-nat-network
     iface_name: enp1s0
-    ipaddress: 172.16.222.2/24
+    ipaddress: 172.16.222.2/12
     dhcp: false
-    gateway: 172.16.222.1
+    gateway: 172.16.0.1
   - network_name: L2
     iface_name: enp2s0
     ipaddress: 192.168.1.1/24
-  - network_name: L2-V1
-    iface_name: enp3s0
-    ipaddress: 192.168.2.1/24
