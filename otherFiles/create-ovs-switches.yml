@@ -1,0 +1,64 @@
+---
+- name: Create OVS Switches
+  hosts: localhost
+  become: yes
+  vars_files:
+    - network_vars.yml
+
+  tasks:
+    #Create an OVS bridge
+    - name: Create OVS bridge
+      openvswitch_bridge:
+        bridge: "{{ networks[item].bridge_name }}"
+        state: present
+      with_items: "{{ networks | list}}"
+      ignore_errors: true
+      become: yes
+
+    # Set the bridge up
+    - name: Bring the bridge up
+      command: ip link set dev "{{ networks[item].bridge_name }}" up
+      become: yes
+      with_items: "{{ networks | list}}"
+      ignore_errors: true
+
+    # Assign Ip to bridge in NAT/Routed mode
+    - name: Assign IP to bridge
+      command: ip addr add "{{ networks[item].bridge_ip }}" dev "{{ networks[item].bridge_name }}"
+      with_items: "{{ networks | list}}"
+      when: networks[item].mode != 'bridge' 
+      ignore_errors: true
+      become: yes
+
+    # Enable ip forwarding
+    - name: Enable IP forwarding for NAT/Routed mode
+      sysctl:
+         name: net.ipv4.ip_forward
+         value: 1
+         state: present
+         reload: yes
+      with_items: "{{ networks | list}}"
+      when: networks[item].mode != 'bridge'
+      become: yes
+
+    # Configure dnsmasq
+    - name: Configure dnsmasq for NAT/Route mode
+      command: "dnsmasq --interface={{ networks[item].bridge_name }} --except-interface=lo --bind-interfaces --dhcp-range={{ networks[item].dhcp_range_start }},{{ networks[item].dhcp_range_end }},12h"
+      with_items: "{{ networks | list}}"
+      when: networks[item].mode != 'bridge'
+      ignore_errors: true
+      become: yes
+
+    #IP table for NAT
+    - name: Create iptables rule for NAT
+      iptables:
+        table: nat
+        chain: POSTROUTING
+        source: "{{ networks[item].bridge_ip }}"
+        jump: MASQUERADE
+        state: present
+      with_items: "{{ networks | list}}"
+      when: networks[item].mode == 'NAT'
+      ignore_errors: true
+      become: yes
+

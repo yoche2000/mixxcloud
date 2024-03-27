@@ -1,0 +1,31 @@
+---
+- name: question 1
+  hosts: localhost
+  gather_facts: no
+  become: yes
+  vars_files:
+    - network_vars.yml
+
+  tasks:
+    # Define a new network
+    - name: Define Virtual Network
+      virt_net:
+        command: define
+        name: "{{ networks[item].network_name }}"
+        xml: '{{ lookup("template", "templates/OVS_network_template.xml.j2") }}'
+      with_items: "{{ networks | list}}"
+      ignore_errors: true
+      become: yes
+
+    # Create and start a network
+    - name: Start Virtual Network
+      command: virsh net-start "{{ networks[item].network_name }}"
+      with_items: "{{ networks | list }}"
+      ignore_errors: true
+      become: yes
+
+    # List available networks
+    - name: List available networks
+      virt_net:
+        command: list_nets
+      become: yes

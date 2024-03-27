@@ -1,0 +1,41 @@
+# Usage: ansible-playbook -i hosts detach-vm.yml -e vm_name=ProjectGuestVM5 -e network_name=L2-V1
+# Atmost 1 Interface should be present - ALL THE TIMES!!
+- name: Removes the Interface from the VM
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Shut down the VM
+      virt:
+        name: "{{ vm_name }}"
+        state: shutdown 
+      become: yes
+    
+    - name: Pausing for 10 seconds
+      pause:
+        seconds: 10
+
+    - name: Dump VM XML configuration
+      shell: "virsh dumpxml {{ vm_name }} > /tmp/{{ vm_name }}.xml"
+      become: yes
+
+    - name: Remove the interface from VM XML
+      xml:
+        path: "/tmp/{{ vm_name }}.xml"
+        xpath: "/domain/devices/interface[source/@network='{{ network_name }}']"
+        state: absent
+      become: yes
+
+    - name: Redefine VM with modified XML
+      command: "virsh define /tmp/{{ vm_name }}.xml"
+      become: yes
+    
+    - name: Pausing for 15 seconds
+      pause:
+        seconds: 15
+
+    - name: Start the VM
+      virt:
+        name: "{{ vm_name }}"
+        state: running 
+      become: yes

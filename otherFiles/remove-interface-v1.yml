@@ -1,0 +1,40 @@
+---
+- name: Removes the Interface from the VM
+  hosts: vm_instances
+  become: yes
+  vars_files:
+    - vm-vars.yml
+
+  tasks:
+    # Create network-config file
+    - name: Update the Network Config File
+      template:
+        src: network.j2
+        dest: "/etc/netplan/50-cloud-init.yaml"
+      loop: "{{ vms }}"
+      become: yes
+
+- name: Restart the VMs
+  hosts: host
+  become: yes
+  vars_files:
+    - vm-vars.yml
+
+  tasks:
+    - name: Shutdown VM
+      virt:
+        name: "{{ item.vm_name }}"
+        command: shutdown
+      loop: "{{ vms }}"
+      become: yes
+   
+    - name: Pausing for 10 seconds
+      pause:
+        seconds: 10
+  
+    - name: Restart VM
+      virt:
+          name: "{{ item.vm_name }}"
+          command: create
+      loop: "{{ vms }}"
+      become: yes

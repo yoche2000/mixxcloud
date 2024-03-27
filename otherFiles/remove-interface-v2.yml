@@ -1,0 +1,46 @@
+---
+- name: Removes the Interface from the VM
+  hosts: localhost
+  become: yes
+  vars_files:
+    - vm_vars.yml
+
+  tasks:
+    - name: Shutdown VM
+      community.libvirt.virt:
+        name: "{{ item.vm_name }}"
+        command: shutdown
+      loop: "{{ vms }}"
+      become: yes
+
+    - name: Get current VM XML
+      community.libvirt.virt:
+        command: get_xml
+        name: "{{ item.vm_name }}"
+      register: vm_xml
+      loop: "{{ vms }}"
+      become: yes
+    - name: Debug VM XML output
+      debug:
+        var: vm_xml
+    - name: Modify the VM XML to remove the interface
+      xml:
+        xmlstring: "{{ vm_xml.output }}"
+        xpath: "/domain/devices/interface[source/@network='L2']"
+        state: absent
+      register: modified_xml
+      loop: "{{ vms }}"
+      become: yes
+
+    - name: Redefine the VM with the updated XML
+      community.libvirt.virt:
+        command: define
+        xml: "{{ modified_xml.xml }}"
+
+    - name: Start the VM again (optional)
+      community.libvirt.virt:
+        name: "{{ item.vm_name }}"
+        state: start
+      when: shutdown_vm is succeeded
+      loop: "{{ vms }}"
+      become: yes

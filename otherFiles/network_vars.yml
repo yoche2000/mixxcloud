@@ -1,0 +1,35 @@
+# network_vars.yml
+
+networks:
+  Internet:
+    network_name: InternetTest
+    bridge_name: Tw1
+    mode: NAT
+    bridge_ip: 192.168.1.1/24
+    gateway: 192.168.1.1
+    netmask: 255.255.255.0
+    dhcp_range_start: 192.168.1.2
+    dhcp_range_end: 192.168.1.254
+
+  L2:
+    network_name: L2
+    bridge_name: Sw2
+    mode: bridge
+
+  L3:
+    network_name: L3
+    bridge_name: Sw3
+    mode: routed
+    bridge_ip: 192.168.2.1/24
+    netmask: 255.255.255.0
+    dhcp_range_start: 192.168.2.2
+    dhcp_range_end: 192.168.2.254
+
+  Other:
+    network_name: Other
+    bridge_name: Sw4
+    mode: routed
+    bridge_ip: 192.168.3.1/24
+    netmask: 255.255.255.0
+    dhcp_range_start: 192.168.3.2
+    dhcp_range_end: 192.168.3.254

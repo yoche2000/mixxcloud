@@ -1,0 +1,37 @@
+#cloud-config
+hostname: "{{ item.vm_name }}"
+disable_root: false
+users:
+- default
+- name: root
+  lock_passwd: false
+  plain_text_passwd: root
+- name: ubuntu
+  lock_passwd: false
+  plain_text_passwd: ubuntu
+  sudo: ALL=(ALL) NOPASSWD:ALL
+ssh_pwauth: true
+runcmd:
+  - |
+    # enable forwarding
+    echo 1 > /proc/sys/net/ipv4/ip_forward
+
+    {% for vm in vms %}
+    {% set ns = namespace(output_iface='') %}
+    {% set input_ifaces = [] %}
+    {% for iface in vm.interfaces %}
+      {% if iface.network_name == "host-nat-network" %}
+        {% set ns.output_iface = iface.iface_name %}
+      {% else %}
+        {% set _ = input_ifaces.append(iface.iface_name) %}
+      {% endif %}
+    {% endfor %}
+    
+    {% for input_iface in input_ifaces %}
+    
+    /sbin/iptables -t nat -A POSTROUTING -o {{ ns.output_iface }} -j MASQUERADE
+    /sbin/iptables -A FORWARD -i {{ input_iface }} -o {{ ns.output_iface }} -j ACCEPT
+    /sbin/iptables -A FORWARD -i {{ ns.output_iface }} -o {{ input_iface }} -m state --state RELATED,ESTABLISHED -j ACCEPT
+    
+    {% endfor %}
+    {% endfor %}

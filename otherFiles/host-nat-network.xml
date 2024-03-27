@@ -1,0 +1,7 @@
+<network>
+  <name>host-nat-network</name>
+  <bridge name="Tw1" stp="on" delay="0"/>
+  <forward mode="nat"/>
+  <ip address="172.16.0.1" netmask="255.240.0.0">
+  </ip>
+</network>
