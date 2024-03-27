@@ -11,5 +11,12 @@ users:
   plain_text_passwd: ubuntu
   sudo: ALL=(ALL) NOPASSWD:ALL
 ssh_pwauth: true
-
-
+runcmd:
+  - mkdir -p /etc/systemd/resolved.conf.d
+  - |
+    cat > /etc/systemd/resolved.conf.d/dns.conf <<EOF
+    [Resolve]
+    DNS=8.8.8.8
+    FallbackDNS=8.8.4.4
+    EOF
+  - systemctl restart systemd-resolved

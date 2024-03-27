@@ -142,7 +142,7 @@ ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_creation(vm_name, vcpu, me
 
 """
 Create Router => Definition and Start
-"""
+
 vm_name = "RouterVM"
 vcpu = 2
 mem = 2048
@@ -164,6 +164,8 @@ interfaces = [
 
 ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_definition(vm_name, vcpu, mem, disk_size, interfaces)
 ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_start(vm_name)
+"""
+
 
 """
 2. VM Creation
@@ -186,8 +188,8 @@ VM_CRUD_Workflows.run_ansible_playbook_for_vm_creation(vm_name, vcpu, mem, disk_
 
 """
 2. VM Creation - Define
-
-vm_name = "ProjectGuestVM-1"
+"""
+vm_name = "ProjectGuestVM-3"
 vcpu = 2
 mem = 2048
 disk_size = "12G"
@@ -195,7 +197,7 @@ interfaces = [
     {
         "network_name": "L2",
         "iface_name": "enp1s0",
-        "ipaddress": "192.168.1.103/24",
+        "ipaddress": "192.168.1.105/24",
         "dhcp": False,
         "gateway": "192.168.1.1",
     }
@@ -203,7 +205,7 @@ interfaces = [
 
 VM_CRUD_Workflows.run_ansible_playbook_for_vm_definition(vm_name, vcpu, mem, disk_size, interfaces)
 VM_CRUD_Workflows.run_ansible_playbook_for_vm_start(vm_name)
-"""
+
 
 """
 3. Deletion of VM
