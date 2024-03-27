@@ -1,0 +1,12 @@
+---
+- name: Start VM Router
+  hosts: localhost
+  become: yes
+  
+  tasks:
+    # Start new vm
+    - name: Start VM
+      virt:
+        name: "{{ vm_name }}"
+        command: create
+      become: yes
