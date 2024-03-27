@@ -9,6 +9,7 @@ from models.vpc_model import VPC
 # from models.vpc_model import VPC
 import traceback
 from utils.utils import Utils
+from constants.infra_constants import *
 
 def print_resources(db):
     print("Tenant ===========")
@@ -54,33 +55,42 @@ def main():
         exit(1)
     db = client['ln']
     
-    
     if not Subnet.find_by_name(db, 'infra'):
         print("Creating infra subnet")
-        infra_sb = Subnet('172.16.0.0/12', 'host-nat-network', 'Tw1').save(db)
+        infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME).save(db)
 
     if not Subnet.find_by_name(db, 'public'):
         print("Creating public subnet")
-        public_sb = Subnet('10.10.10.0/24', 'host-public-network', 'Tw2').save(db)
+        public_sb = Subnet(HOST_PUBLIC_SUBNET, HOST_PUBLIC_NETWORK, HOST_PUBLIC_BR_NAME).save(db)
     
-    tenant = Tenant.find_by_name(db, 'Alfred')
-    if not Tenant.find_by_name(db, 'Alfred'):
-        tenant = Tenant('Alfred').save(db)
+    # infra_sb.define_net(db)
+    infra_sb.undefine_net(db)
     
-    vpc = tenant.get_vpc_by_name(db, 'vpc1')
-    if not vpc:
-        vpc: VPC = tenant.create_vpc(db, 'vpc1', 'east')
+    # tenant = Tenant.find_by_name(db, 'Alfred')
+    # if not Tenant.find_by_name(db, 'Alfred'):
+    #     tenant = Tenant('Alfred').save(db)
+    
+    # vpc = tenant.get_vpc_by_name(db, 'vpc1')
+    # if not vpc:
+    #     vpc: VPC = tenant.create_vpc(db, 'vpc1', 'east')
 
-    sb1 = vpc.create_subnet(db, '192.168.10.0/30', 'vm_net_1', 'br_net_1')
-    sb2 = vpc.create_subnet(db, '192.30.20.0/30', 'vm_net_2', 'br_net_2')
+    # sb1 = vpc.create_subnet(db, '192.168.10.0/30', 'vm_net_1', 'br_net_1')
+    # sb2 = vpc.create_subnet(db, '192.30.20.0/30', 'vm_net_2', 'br_net_2')
+    # sb3 = vpc.create_subnet(db, '192.30.21.0/30', 'vm_net_3', 'br_net_3')
+    # sb4 = vpc.create_subnet(db, '192.30.22.0/30', 'vm_net_4', 'br_net_4')
     
-    vm = VM('VM1', 1, 1, 10).save(db)
-
+    # vm = VM('VM1', 1, 1, 10).save(db)
     
-    vm.connect_to_network(db, sb1.get_id(), default=True)
-    vm.connect_to_network(db, sb2.get_id())
+    # vm.connect_to_network(db, sb1.get_id(), default=True)
+    # vm.connect_to_network(db, sb2.get_id(), load_balancing_interface = True)
+    # vm.connect_to_network(db, sb3.get_id(), load_balancing_interface = True)
+    # vm.connect_to_network(db, sb4.get_id(), load_balancing_interface = False)
+    # # vm.connect_to_network(db, sb2.get_id(), load_balancing_interface =True)
+    # vm.connect_to_network(db, public_sb.get_id(), load_balancing_interface = True)
     
-    # print_resources(db)
+    # for interface in vm.list_interfaces(db):
+    #     print(vm.name, interface.interface_name, Subnet.find_by_id(db, interface.subnet_id).network_name )
+    # # print_resources(db)
 
 
 if __name__ == '__main__':

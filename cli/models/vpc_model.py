@@ -13,6 +13,7 @@ from .subnet_model import Subnet
 from .vm_model import VM
 from .interface_model import Interface
 from utils.utils import Utils
+from constants.infra_constants import HOST_NAT_NETWORK
 
 
 class VPCStatus(Enum):
@@ -52,7 +53,7 @@ class VPC:
         
         # add interface to router vm
         router_vm: VM = VM.find_by_id(db, self.routerVM)
-        router_vm.connect_to_network(db, subnet.get_id())
+        router_vm.connect_to_network(db, subnet.get_id(), is_gateway=True, load_balancing_interface=False)
         return subnet
 
     def remove_subnet(self, db, subnet:str):
@@ -75,7 +76,7 @@ class VPC:
         disk_size = 10
         router_vm = VM(name, vCPU, vMem, disk_size)
         router_vm.save(db)
-        sb = Subnet.find_by_name(db, 'infra')
+        sb = Subnet.find_by_name(db, HOST_NAT_NETWORK)
         router_vm.connect_to_network(db, sb.get_id(), default= True)
         self.routerVM = router_vm.get_id()
         self.save(db)

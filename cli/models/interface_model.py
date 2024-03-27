@@ -3,15 +3,16 @@ from bson.objectid import ObjectId
 
 
 class Interface:
-    def __init__(self, ip_address, mac_address, network_mask, gateway, instance_id, subnet_id, _id = None):
+    def __init__(self, ip_address, mac_address, network_mask, gateway, instance_id, subnet_id, interface_name, _id = None):
         self.ip_address = ip_address
         self.mac_address = mac_address
         self.network_mask = network_mask
         self.gateway = gateway
         self.instance_id = instance_id
         self.subnet_id = subnet_id
+        self.interface_name = interface_name
         self._id = _id
-    
+
     def save(self, db):
         if self._id is None:
             obj = db.interface.insert_one(self.to_dict())
@@ -31,6 +32,7 @@ class Interface:
                  "gateway": self.gateway,
                  "instance_id": self.instance_id,
                  "subnet_id": self.subnet_id,
+                 "interface_name": self.interface_name,
                  }
     
     def delete(self, db):
@@ -49,6 +51,7 @@ class Interface:
                           data['gateway'], 
                           data['instance_id'], 
                           data['subnet_id'], 
+                          data['interface_name'], 
                           _id = data['_id']
                           )
     
@@ -68,3 +71,33 @@ class Interface:
         data = db.interface.find_one({'instance_id': instance_id, 'subnet_id': subnet_id})
         if data:
             return Interface.from_dict(data)
+    
+    @staticmethod
+    def get_next_interface_name(db, instance_id: str | ObjectId, load_balancing_interface = False, is_default = False) -> str:
+        # 'enp{num}s0' num is interface number
+        # num = 0 for default connction
+        # num = 1 for other subnets and so on
+        # num = 2 ...
+        
+        # lb balancer naming ep1, ep2, ep3 ......
+        # self.interface_name = 'enp1s0'
+        if isinstance(instance_id, str):
+            instance_id = ObjectId(instance_id)
+        if is_default:
+            interface_count = db.interface.count_documents({"instance_id": instance_id, 'interface_name': 'enp0s0'})
+            if 0 == interface_count:
+                return 'enp0s0'
+            else:
+                raise Exception('cannot more than one default interface')
+        
+        else:
+            if not load_balancing_interface:
+                default_offset = db.interface.count_documents({"instance_id": instance_id, 'interface_name': 'enp0s0'})
+                print("default_offset", default_offset)
+                interface_num = db.interface.count_documents({"instance_id": instance_id, 'interface_name':{'$regex':'^enp'}}) + 1 - default_offset
+                return f"enp{interface_num}s0"
+            else:
+                interface_num = db.interface.count_documents({"instance_id": instance_id, 'interface_name':{'$regex':'^ep'}}) + 1
+                return f"ep{interface_num}"
+        
+        
