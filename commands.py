@@ -14,6 +14,38 @@ class VM_CRUD_Workflows:
         print(f"VM Creation for {vmName} has been completed..")
     
     @staticmethod
+    def run_ansible_playbook_for_vm_definition(vmName, vCPU, memory, diskSize, interfaces):
+        try:
+            print(f"VM Definition for {vmName} has been triggered..")
+            VMConfiguration.createVMVarsFile(vmName, vCPU, memory, diskSize, interfaces)
+            command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/create-vm-definition.yml"]
+            Commands.run_command(command)
+            print(f"VM Definition for {vmName} has been completed..")
+        except Exception as error:
+            print(f"VM Definition for {vmName} has a failure..")
+            print(f"More Details: {error}")
+            return False
+        return True
+    
+    @staticmethod
+    def run_ansible_playbook_for_vm_start(vmName):
+        try:
+            print(f"VM Start for {vmName} has been triggered..")
+            command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/create-vm-start.yml","-e",f"vm_name={vmName}"]
+            Commands.run_command(command)
+            print(f"VM Start for {vmName} has been completed..")
+        except Exception as error:
+            print(f"VM Start for {vmName} has a failure..")
+            print(f"More Details: {error}")
+            return False
+        return True
+
+
+        
+
+
+
+    @staticmethod
     def run_ansible_playbook_for_vm_deletion(vmName):
         print(f"VM Deletion for {vmName} has been triggered..")
         command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/destroy-vm.yml", "-e", f"vm_name={vmName}"]
@@ -56,7 +88,7 @@ class ROUTER_CRUD_Workflows:
 # Testing:
 """
 1: Create VPC => Router VM Creation
-"""
+
 vm_name = "RouterVM"
 vcpu = 2
 mem = 2048
@@ -77,7 +109,7 @@ interfaces = [
 ]
 
 ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_creation(vm_name, vcpu, mem, disk_size, interfaces)
-
+"""
 
 """
 2. VM Creation
@@ -97,6 +129,26 @@ interfaces = [
 ]
 VM_CRUD_Workflows.run_ansible_playbook_for_vm_creation(vm_name, vcpu, mem, disk_size, interfaces)
 """
+
+"""
+2. VM Creation - Define
+"""
+vm_name = "ProjectGuestVM-1"
+vcpu = 2
+mem = 2048
+disk_size = "12G"
+interfaces = [
+    {
+        "network_name": "L2",
+        "iface_name": "enp1s0",
+        "ipaddress": "192.168.1.103/24",
+        "dhcp": False,
+        "gateway": "192.168.1.1",
+    }
+]
+
+VM_CRUD_Workflows.run_ansible_playbook_for_vm_definition(vm_name, vcpu, mem, disk_size, interfaces)
+VM_CRUD_Workflows.run_ansible_playbook_for_vm_start(vm_name)
 
 """
 3. Deletion of VM
