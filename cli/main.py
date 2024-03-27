@@ -10,6 +10,10 @@ from models.vpc_model import VPC
 import traceback
 from utils.utils import Utils
 from constants.infra_constants import *
+import os
+
+def is_root():
+    return os.geteuid() == 0
 
 def print_resources(db):
     print("Tenant ===========")
@@ -104,4 +108,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if is_root():
+        main()
+    else:
+        print("Run the script as sudo")
+        exit(1)
