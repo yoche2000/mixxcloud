@@ -76,10 +76,19 @@ def main():
     if public_sb.status != SubnetStatus.RUNNING and public_sb.status != SubnetStatus.ERROR:
         print(f"Defining {HOST_PUBLIC_NETWORK}")
         public_sb.define_net(db)
+
+            
+    # sb = Subnet('192.168.10.0/24', 'L2', 'brl2').save(db)
+    # sb.define_net(db)
+    
+    # sb.undefine_net(db)
+    # sb.delete(db)
     
     # USE THIS COMMAND TO UNDEFINE
     # public_sb.undefine_net(db)
+    # public_sb.delete(db)
     # infra_sb.undefine_net(db)
+    # infra_sb.delete(db)
     
     
     

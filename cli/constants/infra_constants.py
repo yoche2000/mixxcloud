@@ -1,5 +1,5 @@
 HOST_NAT_NETWORK = "host-nat-network"
-HOST_NAT_SUBNET = "172.16.0.0/24"
+HOST_NAT_SUBNET = "172.16.0.0/12"
 HOST_NAT_BR_NAME = 'Tw1'
 
 HOST_PUBLIC_NETWORK = "host-public-network"
