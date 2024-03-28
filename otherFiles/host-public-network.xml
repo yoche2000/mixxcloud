@@ -1,0 +1,5 @@
+<network connections='1'>
+  <name>host-public-network</name>
+  <forward mode='bridge'/>
+  <bridge name='Tw2'/>
+</network>

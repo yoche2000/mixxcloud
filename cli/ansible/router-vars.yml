@@ -12,3 +12,6 @@ vms:
   - network_name: L2
     iface_name: enp2s0
     ipaddress: 192.168.1.1/24
+  - network_name: host-public-network
+    iface_name: enp3s0
+    ipaddress: 10.10.10.2/24

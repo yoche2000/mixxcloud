@@ -44,6 +44,7 @@ class VM:
         self.status = VMState[state]
         self.interfaces = interfaces or []
         self.isRouterVM = isRouterVM 
+        self.load_balancer_info = None
 
     def add_interface(self, db, ip_address, mac_address, network_mask, gateway):
         if VMState.UNDEFINED:

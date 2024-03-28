@@ -188,7 +188,7 @@ VM_CRUD_Workflows.run_ansible_playbook_for_vm_creation(vm_name, vcpu, mem, disk_
 
 """
 2. VM Creation - Define
-"""
+
 vm_name = "ProjectGuestVM-3"
 vcpu = 2
 mem = 2048
@@ -205,7 +205,7 @@ interfaces = [
 
 VM_CRUD_Workflows.run_ansible_playbook_for_vm_definition(vm_name, vcpu, mem, disk_size, interfaces)
 VM_CRUD_Workflows.run_ansible_playbook_for_vm_start(vm_name)
-
+"""
 
 """
 3. Deletion of VM
