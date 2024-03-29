@@ -11,6 +11,7 @@ import traceback
 from utils.utils import Utils
 from constants.infra_constants import *
 import os
+import console
 
 def is_root():
     return os.geteuid() == 0
@@ -122,6 +123,7 @@ def main():
 if __name__ == '__main__':
     if is_root():
         main()
+        # console.main()
     else:
         print("Run the script as sudo")
         exit(1)

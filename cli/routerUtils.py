@@ -60,6 +60,7 @@ class RouterConfiguration:
 
 
 # Test Case:
+"""
 vm_name = "RouterVM"
 vcpu = 2
 mem = 2048
@@ -79,6 +80,6 @@ interfaces = [
     }
 ]
 # RouterConfiguration.createRouterVarsFile(vm_name, vcpu, mem, disk_size, interfaces)
-
+"""
 
         
