@@ -34,4 +34,13 @@ runcmd:
     /sbin/iptables -A FORWARD -i {{ ns.output_iface }} -o {{ input_iface }} -m state --state RELATED,ESTABLISHED -j ACCEPT
     
     {% endfor %}
+
+    {% for iface in vm.interfaces %}
+      {% if iface.network_name == "host-public-network" %}
+        {% for ip, weight in iface.tenantIps.items() %}
+
+    /sbin/iptables -A PREROUTING -t nat -p tcp -d {{ iface.ipaddress.split('/')[0] }} --dport 8080 -m statistic --mode random --probability {{ weight }} -j DNAT --to-destination {{ ip }}:80
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
     {% endfor %}

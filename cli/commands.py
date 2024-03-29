@@ -200,6 +200,7 @@ interfaces = [
         "ipaddress": "192.168.1.105/24",
         "dhcp": False,
         "gateway": "192.168.1.1",
+        "tenantIps": []
     }
 ]
 

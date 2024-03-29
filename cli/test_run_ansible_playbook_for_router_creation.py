@@ -22,6 +22,11 @@ interfaces = [
         "network_name": "host-public-network",
         "iface_name": "enp3s0",
         "ipaddress": "10.10.10.2/24",
+        "tenantIps" : {
+            "192.168.1.106": "0.33", 
+            "192.168.1.103": "0.5", 
+            "192.168.1.102": "1"
+        }
     }
 ]
 

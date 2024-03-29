@@ -1,0 +1,3 @@
+sudo iptables -A PREROUTING -t nat -p tcp -d 10.10.10.2 --dport 8080 -m statistic --mode random --probability 0.33 -j DNAT --to-destination 192.168.1.106:80
+sudo iptables -A PREROUTING -t nat -p tcp -d 10.10.10.2 --dport 8080 -m statistic --mode random --probability 0.5 -j DNAT --to-destination 192.168.1.103:80
+sudo iptables -A PREROUTING -t nat -p tcp -d 10.10.10.2 --dport 8080 -j DNAT --to-destination 192.168.1.102:80
