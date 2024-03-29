@@ -32,7 +32,6 @@ class SubnetController:
                 print("Cannot update at his time")
                 return
             if subnet.status == SubnetStatus.ERROR:
-                # TODO
                 SubnetController.undefine(db, subnet)
             subnet.status = SubnetStatus.STARTING
                     
@@ -101,7 +100,7 @@ class SubnetController:
     
     @staticmethod
     def undefine(db, subnet: Subnet):
-        
+        print(subnet.json())
         if not isinstance(subnet, Subnet):
             raise Exception("expect subnet of type Subnet")
         try:
@@ -133,6 +132,7 @@ class SubnetController:
     @staticmethod
     def destroy_bridge(bridge_name: str):
         SubnetController.check_is_not_empty(bridge_name)
+        print("destroy bridge", bridge_name)
         os.system("sudo ip link set down "+bridge_name)
         os.system("brctl delbr "+bridge_name)
         try:
@@ -142,6 +142,7 @@ class SubnetController:
             return True
     @staticmethod
     def destory_network(network_name: str):
+        print("destroy network", network_name)
         try:
             path = '/etc/libvirt/qemu/networks/subnets/' + network_name + '.xml'
             os.system("sudo rm " + path)

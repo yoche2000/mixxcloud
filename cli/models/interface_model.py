@@ -94,7 +94,6 @@ class Interface:
         else:
             if not load_balancing_interface:
                 default_offset = db.interface.count_documents({"instance_id": instance_id, 'interface_name': DEFAULT_INTERFACE_NAME})
-                print("default_offset", default_offset)
                 interface_num = db.interface.count_documents({"instance_id": instance_id, 'interface_name':{'$regex':'^enp'}}) + 2 - default_offset
                 return f"enp{interface_num}s0"
             else:
