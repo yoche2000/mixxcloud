@@ -6,7 +6,7 @@ import pyfiglet
 # Usage from console.py: sudo python3 console.py [command]
 
 
-def display_welcome(title = pyfiglet.figlet_format("- MIXXCLOUD -", font="slant"), message="Welcome to the Cloud Implementation by Suma, Thomas, Karan & Deepak!! \U0001F44B \U0001F44B"):
+def display_welcome(title = pyfiglet.figlet_format("- MIXXCLOUD -", font="slant"), message="Welcome to the Cloud Implementation by Sumalatha, Thomas, Karan & Deepak!! \U0001F44B \U0001F44B"):
     click.secho(title, fg='blue', bold=True)
     click.secho(message, fg='white', bold=True)
     click.echo()
