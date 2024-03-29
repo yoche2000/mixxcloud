@@ -2,19 +2,58 @@ import os
 import subprocess
 import traceback
 from ipaddress import ip_network
+from models.subnet_model import SubnetStatus, Subnet, SubnetType
+from models.tenant_model import Tenant
+from models.vpc_model import VPC
+
 class SubnetController:
     @staticmethod
-    def define(network_name: str, bridge_name: str,   success, failure, nat_enabled = False, cidr: str | None = None):
+    def define(db, tenant: Tenant | str | None , vpc: VPC | str | None, subnet: Subnet):
+        if not isinstance(subnet, Subnet):
+            raise Exception("expect subnet of type Subnet")
         try:
+            if tenant is None:
+                pass
+            elif isinstance(tenant, str):
+                tenant = Tenant.find_by_name(db, tenant)
+            if vpc is None:
+                pass
+            elif isinstance(vpc, str):
+                for i in tenant.vpcs:
+                    tmp = VPC.find_by_id(db, i)
+                    if tmp.name == vpc:
+                        vpc = tmp
+                        break
+            if subnet.status == SubnetStatus.RUNNING:
+                print("Subnet is already running")
+                return True
+            if subnet.status == SubnetStatus.STARTING or subnet.status == SubnetStatus.UPDATING:
+                # don't update status since someother action is being performed on this object
+                print("Cannot update at his time")
+                return
+            if subnet.status == SubnetStatus.ERROR:
+                # TODO
+                SubnetController.undefine(db, subnet)
+            subnet.status = SubnetStatus.STARTING
+                    
+            network_name = subnet.network_name
+            bridge_name = subnet.bridge_name
+            cidr = subnet.subnet
+            nat_enabled = SubnetType.NAT == subnet.subnet_type
+            print(f"Define {network_name}")
             br = nat_enabled or SubnetController.create_bridge(bridge_name)
             nw = SubnetController.create_network(network_name, bridge_name, cidr, nat_enabled)
             if br and nw:
-                success()
+                subnet.status = SubnetStatus.RUNNING
+                subnet.save(db)
             else:
-                failure()
+                subnet.status = SubnetStatus.ERROR
+                subnet.save(db)
         except Exception as e:
             traceback.print_exc()
-            failure()
+            subnet.status = SubnetStatus.ERROR
+            subnet.save(db)
+    
     
     @staticmethod
     def create_bridge(bridgename: str):
@@ -61,18 +100,35 @@ class SubnetController:
             return False
     
     @staticmethod
-    def undefine(network_name: str, bridge_name: str, success, failure, nat_enabled = False):
-        print(f"Undefine {network_name}")
+    def undefine(db, subnet: Subnet):
+        
+        if not isinstance(subnet, Subnet):
+            raise Exception("expect subnet of type Subnet")
         try:
+            if subnet.status == SubnetStatus.UNDEFINED:
+                return True
+            if subnet.status == SubnetStatus.STARTING or subnet.status == SubnetStatus.UPDATING:
+                # don't update status since someother action is being performed on this object
+                print("Cannot update at his time")
+                return 
+            subnet.status = SubnetStatus.DELETING
+            subnet.save(db)
+            network_name = subnet.network_name
+            bridge_name = subnet.bridge_name
+            nat_enabled = SubnetType.NAT == subnet.subnet_type
+            print(f"Undefine {network_name}")
             br = nat_enabled or SubnetController.destroy_bridge(bridge_name)
             nw = SubnetController.destory_network(network_name)
             if br and nw:
-                success()
+                subnet.status = SubnetStatus.UNDEFINED
+                subnet.save(db)
             else:
-                failure()
-        except Exception as e:
+                subnet.status = SubnetStatus.ERROR
+                subnet.save(db)
+        except Exception:
             traceback.print_exc()
-            failure()
+            subnet.status = SubnetStatus.ERROR
+            subnet.save(db)
     
     @staticmethod
     def destroy_bridge(bridge_name: str):

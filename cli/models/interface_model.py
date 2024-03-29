@@ -81,20 +81,21 @@ class Interface:
         
         # lb balancer naming ep1, ep2, ep3 ......
         # self.interface_name = 'enp1s0'
+        DEFAULT_INTERFACE_NAME = 'enp1s0'
         if isinstance(instance_id, str):
             instance_id = ObjectId(instance_id)
         if is_default:
             interface_count = db.interface.count_documents({"instance_id": instance_id, 'interface_name': 'enp0s0'})
             if 0 == interface_count:
-                return 'enp0s0'
+                return DEFAULT_INTERFACE_NAME
             else:
                 raise Exception('cannot more than one default interface')
         
         else:
             if not load_balancing_interface:
-                default_offset = db.interface.count_documents({"instance_id": instance_id, 'interface_name': 'enp0s0'})
+                default_offset = db.interface.count_documents({"instance_id": instance_id, 'interface_name': DEFAULT_INTERFACE_NAME})
                 print("default_offset", default_offset)
-                interface_num = db.interface.count_documents({"instance_id": instance_id, 'interface_name':{'$regex':'^enp'}}) + 1 - default_offset
+                interface_num = db.interface.count_documents({"instance_id": instance_id, 'interface_name':{'$regex':'^enp'}}) + 2 - default_offset
                 return f"enp{interface_num}s0"
             else:
                 interface_num = db.interface.count_documents({"instance_id": instance_id, 'interface_name':{'$regex':'^ep'}}) + 1

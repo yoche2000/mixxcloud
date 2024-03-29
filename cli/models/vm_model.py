@@ -22,17 +22,28 @@ from utils.ip_utils import IPUtils
 from bson.objectid import ObjectId
 from ipaddress import IPv4Address
 import random
+from controllers.vm_controller import VMController
+import traceback
 
 class VMState(Enum):
     UNDEFINED = 1       # No resources created/allocated
-    DEFINED = 2         # Resources allocated, first boot not done
-    RUNNING = 3         # VM is runniing
-    SHUTDOWN = 4        # VM is shutdown
-    PAUSED = 5          # VM is paused 
-    SUSPENDED = 6       # VM is suspended
-    UPDATING = 7        # VM is updating (unstable)
-    ERROR = 8           # VM ran into an unfixable error
-    DELETING = 9        # VM is getting deleted
+    STARTING = 2        # Allocating Resources
+    DEFINED = 3         # Resources allocated, first boot not done
+    RUNNING = 4         # VM is runniing
+    SHUTDOWN = 5        # VM is shutdown
+    PAUSED = 6          # VM is paused 
+    SUSPENDED = 7       # VM is suspended
+    UPDATING = 8        # VM is updating (unstable)
+    ERROR = 9           # VM ran into an unfixable error
+    DELETING = 10       # VM is getting deleted
+
+def format_disk_size(disk_size):
+    try:
+        if 'G' in disk_size:
+            return disk_size
+        int(disk_size)
+    except:
+        return f"{disk_size}G"
 
 class VM:
     def __init__(self, name, vCPU, vMem, disk_size, interfaces: List[str] | None = None, isRouterVM = False, state = VMState.UNDEFINED.name, _id = None):
@@ -40,8 +51,8 @@ class VM:
         self.name = name
         self.vCPU = vCPU
         self.vMem = vMem
-        self.disk_size = disk_size
-        self.status = VMState[state]
+        self.disk_size = format_disk_size(disk_size)
+        self.state = VMState[state]
         self.interfaces = interfaces or []
         self.isRouterVM = isRouterVM 
         self.load_balancer_info = None
@@ -116,6 +127,107 @@ class VM:
             self.interfaces.remove(interface.get_id())
             interface.delete(db)
             self.save(db)
+            
+    def define(self, db):
+        if self.state == VMState.STARTING or self.state == VMState.UPDATING or self.state == VMState.DELETING:
+            # VM is changing state already
+            return False
+        try:
+            if self.state == VMState.ERROR:
+                # self.undefine()
+                pass
+            elif self.state != VMState.UNDEFINED:
+                print("VM is already defined")
+                # VM is already defined
+                return False
+                
+            
+            self.state = VMState.STARTING
+            self.save(db)
+            def success():
+                self.state = VMState.DEFINED
+                self.save(db)
+            def failure():
+                self.state = VMState.ERROR
+                self.save(db)
+            
+            interfaces = db.interface.find({'instance_id': self._id})
+            formatted_interface = []
+            for interface in interfaces:
+                tmp = Interface.from_dict(interface)
+                print(tmp.json())
+                tmp1 = db.subnet.find_one({'_id': tmp.subnet_id})
+                print(tmp1)
+                conn_nw = Subnet.from_dict(tmp1)
+                out = {}
+                out['network_name'] = conn_nw.network_name
+                out['iface_name'] = tmp.interface_name
+                out['ipaddress'] = tmp.ip_address
+                out['dhcp'] = False
+                if tmp.gateway:
+                    out['gateway'] = tmp.gateway
+                formatted_interface.append(out)
+            print(formatted_interface)
+            
+            VMController.create(self.name, self.vCPU, self.vMem, self.disk_size, formatted_interface, success=success, failure=failure)
+        except Exception:
+            if self.state != VMState.ERROR:
+                failure()
+            traceback.print_exc()
+        
+    def undefine(self, db):
+        if self.state == VMState.STARTING or self.state == VMState.UPDATING or self.state == VMState.DELETING:
+            # VM is changing state already
+            return False
+        try:
+            if self.state == VMState.UNDEFINED:
+                print("VM is already undefined")
+                # VM is already defined
+                return True
+            
+            self.state = VMState.DELETING
+            self.save(db)
+            def success():
+                self.state = VMState.UNDEFINED
+                self.save(db)
+            def failure():
+                print("Failure was called")
+                self.state = VMState.ERROR
+                self.save(db)
+                print("Trying to destroy")
+            print("Undefine called")
+            VMController.destroy(self.name, success=success, failure=failure)
+        except Exception:
+            print("Exception")
+            if self.state != VMState.ERROR:
+                failure()
+            traceback.print_exc()
+    
+    def start(self, db):
+        if self.state == VMState.UPDATING or self.state == VMState.STARTING or self.start == VMState.DELETING:
+            return False
+        try:
+            if self.state == VMState.ERROR:
+                self.undefine(db)
+                self.define(db)
+            elif self.state == VMState.UNDEFINED:
+                self.define(db)
+            elif self.state == VMState.RUNNING:
+                print("VM is already running")
+                return True
+            self.state = VMState.UPDATING
+            self.save(db)
+            def success():
+                self.state = VMState.RUNNING
+                self.save(db)
+            def failure():
+                self.state = VMState.ERROR
+                self.save(db)
+            VMController.start(self.name, success=success, failure=failure)
+        except Exception:
+            if self.state != VMState.ERROR:
+                failure()
+            traceback.print_exc()
 
     def list_interfaces(self, db):
         # for dat in db.interface.find({'_id': {'$in': self.interfaces}}):
@@ -141,9 +253,9 @@ class VM:
                 "vCPU": self.vCPU,
                 "vMem": self.vMem,
                 "disk_size": self.disk_size,
-                "status": self.status.name,
                 "interfaces": self.interfaces,
                 "isRouterVM": self.isRouterVM,
+                "state": self.state.name,
                }
     
     def delete(self, db):
@@ -162,7 +274,7 @@ class VM:
                   data['disk_size'], 
                   data['interfaces'],
                   data['isRouterVM'],
-                  state=data['status'],
+                  state=data['state'],
                   _id = data['_id'])
 
     @staticmethod

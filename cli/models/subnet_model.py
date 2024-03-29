@@ -10,7 +10,7 @@ from enum import Enum
 from utils.utils import Utils
 from ipaddress import ip_network, IPv4Network
 from bson.objectid import ObjectId
-from controllers.subnet_controller import SubnetController
+# from controllers.subnet_controller import SubnetController
 
 class SubnetStatus(Enum):
     UNDEFINED = 1
@@ -45,7 +45,6 @@ class Subnet:
         self._subnet: IPv4Network = ip_network(subnet)
         self.status = SubnetStatus[status]
         self.subnet_type = SubnetType[subnet_type]
-        print(subnet_type, self.subnet_type, self.network_name)
     
     # @staticmethod
     # def create_subnet(db, subnet, network_name, bridge_name):
@@ -67,16 +66,16 @@ class Subnet:
         def failure():
             self.status = SubnetStatus.ERROR
             self.save(db)
-        try:
-            SubnetController.define(self.network_name, 
-                                    self.bridge_name,
-                                    cidr = self.subnet, 
-                                    nat_enabled = SubnetType.NAT == self.subnet_type, 
-                                    success=success, 
-                                    failure=failure)
-        except:
-            return False
-        return True
+        # try:
+            # SubnetController.define(self.network_name, 
+            #                         self.bridge_name,
+            #                         cidr = self.subnet, 
+            #                         nat_enabled = SubnetType.NAT == self.subnet_type, 
+            #                         success=success, 
+            #                         failure=failure)
+        # except:
+        #     return False
+        # return True
     
     def undefine_net(self, db):
         if self.status == SubnetStatus.UNDEFINED:

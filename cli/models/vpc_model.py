@@ -22,6 +22,7 @@ class VPCStatus(Enum):
     RUNNING = 3
     UPDATING = 4
     DELETING = 5
+    ERROR = 6
 
 class VPC:
     def __init__(self, name, region, subnets = None, routerVM = None, status = VPCStatus.UNDEFINED.name, _id = None):
@@ -56,6 +57,48 @@ class VPC:
         router_vm.connect_to_network(db, subnet.get_id(), is_gateway=True, load_balancing_interface=False)
         return subnet
 
+    def up(self, db):
+        if self.status == VPCStatus.RUNNING:
+            return True
+        elif self.status == VPCStatus.ERROR:
+            self.down(db)
+        self.status = VPCStatus.CREATING
+        self.save(db)
+        try:
+            if self.routerVM is None:
+                self.create_router(db)
+                for subnet_id in self.subnets:
+                    sb = Subnet.find_by_id(subnet_id)
+                router_vm: VM = VM.find_by_id(db, self.routerVM)
+                router_vm.connect_to_network(db, sb.get_id(), is_gateway=True, load_balancing_interface=False)
+            
+            for subnet_id in self.subnets:
+                sb = Subnet.find_by_id(subnet_id)
+                sb.define_net(db)
+            
+            vm = VM.find_by_id(self.routerVM)
+            vm.start(db)
+        
+        except:
+            self.status = VPCStatus.ERROR
+            self.save(db)
+
+
+    def down(self, db):
+        if self.status == VPCStatus.UNDEFINED:
+            return True
+        try:
+            router_vm = VM.find_by_id(self.routerVM)
+            router_vm.undefine(db)
+            
+            for subnet_id in self.subnets:
+                sb = Subnet.find_by_id(subnet_id)
+                sb.undefine_net(db)
+            
+        except:
+            self.status = VPCStatus.ERROR
+            self.save(db)
+
     def remove_subnet(self, db, subnet:str):
         data = db.subnet.find({'subnet': subnet})
         if data:
@@ -68,33 +111,10 @@ class VPC:
                 for interfaces_data in interfaces_datas:
                     connected_vm = VM.from_dict(db.vm.find({"_id": interfaces_data['instance_id']}))
                     connected_vm.disconnect_from_network(db, subnet.get_id())
-    
-    def create_router(self, db):
-        name = 'sample_name'
-        vCPU = 1
-        vMem = 2
-        disk_size = 10
-        router_vm = VM(name, vCPU, vMem, disk_size)
-        router_vm.save(db)
-        sb = Subnet.find_by_name(db, HOST_NAT_NETWORK)
-        router_vm.connect_to_network(db, sb.get_id(), default= True)
-        self.routerVM = router_vm.get_id()
-        self.save(db)
+
 
     def get_router(self) -> VM:
         return VM.find_by_id(self.routerVM)
-    
-
-    def has_router(self, db):
-        return self.routerVM is not None
-
-    def update_router(self, db):
-        # TODO update router vm etc
-        pass
-
-    def update_router_status(self, db):
-        # TODO update status of router - defined, running, suspended, shutdown, undefined
-        pass
 
     def save(self, db):
         if self._id is None:
@@ -124,6 +144,7 @@ class VPC:
     @staticmethod
     def from_dict(data):
         if data is None: return
+        print(data)
         return VPC(data['name'], data['region'], data['subnets'], data['routerVM'], status=data['status'], _id = data['_id'], )
 
     @staticmethod
