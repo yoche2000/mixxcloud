@@ -10,7 +10,7 @@ from enum import Enum
 from utils.utils import Utils
 from ipaddress import ip_network, IPv4Network
 from bson.objectid import ObjectId
-from controllers.subnet_controller import SubnetController
+# from controllers.subnet_controller import SubnetController
 
 class SubnetStatus(Enum):
     UNDEFINED = 1
@@ -45,63 +45,6 @@ class Subnet:
         self._subnet: IPv4Network = ip_network(subnet)
         self.status = SubnetStatus[status]
         self.subnet_type = SubnetType[subnet_type]
-        print(subnet_type, self.subnet_type, self.network_name)
-    
-    # @staticmethod
-    # def create_subnet(db, subnet, network_name, bridge_name):
-    def define_net(self, db):
-        if self.status == SubnetStatus.RUNNING:
-            print("Subnet is already running")
-            return True
-        if self.status == SubnetStatus.STARTING or self.status == SubnetStatus.UPDATING:
-            # don't update status since someother action is being performed on this object
-            print("Cannot update at his time")
-            return
-        if self.status == SubnetStatus.ERROR:
-            self.undefine_net(db)
-        self.status = SubnetStatus.STARTING
-        self.save(db)
-        def success():
-            self.status = SubnetStatus.RUNNING
-            self.save(db)
-        def failure():
-            self.status = SubnetStatus.ERROR
-            self.save(db)
-        try:
-            SubnetController.define(self.network_name, 
-                                    self.bridge_name,
-                                    cidr = self.subnet, 
-                                    nat_enabled = SubnetType.NAT == self.subnet_type, 
-                                    success=success, 
-                                    failure=failure)
-        except:
-            return False
-        return True
-    
-    def undefine_net(self, db):
-        if self.status == SubnetStatus.UNDEFINED:
-            return True
-        if self.status == SubnetStatus.STARTING or self.status == SubnetStatus.UPDATING:
-            # don't update status since someother action is being performed on this object
-            print("Cannot update at his time")
-            return 
-        self.status = SubnetStatus.DELETING
-        self.save(db)
-        def success():
-            self.status = SubnetStatus.UNDEFINED
-            self.save(db)
-        def failure():
-            self.status = SubnetStatus.ERROR
-            self.save(db)
-        try:
-            SubnetController.undefine(self.network_name,
-                                      self.bridge_name,
-                                      nat_enabled = SubnetType.NAT == self.subnet_type, 
-                                      success=success,
-                                      failure=failure)
-        except:
-            return False
-        return True
 
     def get_gateway_ip(self):
         ip_addr = self._subnet.hosts()

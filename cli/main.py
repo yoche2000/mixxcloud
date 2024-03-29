@@ -1,7 +1,8 @@
 # from models.vm_model import VM
 # from models import  Tenant, VM
+from controllers.vm_controller import VMController
 from models.db_model import DB
-from models.vm_model import VM
+from models.vm_model import VM, VMState
 from models.tenant_model import Tenant
 from models.interface_model import Interface
 from models.subnet_model import Subnet, SubnetStatus, SubnetType
@@ -12,6 +13,9 @@ from utils.utils import Utils
 from constants.infra_constants import *
 import os
 import console
+from controllers.tenant_controller import TenantController
+from controllers.vpc_controller import VPCController
+from controllers.subnet_controller import SubnetController
 
 def is_root():
     return os.geteuid() == 0
@@ -67,7 +71,8 @@ def main():
     
     if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
         print(f"Defining {HOST_NAT_NETWORK}")
-        infra_sb.define_net(db)
+        # infra_sb.define_net(db)
+        SubnetController.define(db, None, None, infra_sb)
 
     public_sb =  Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
     if not public_sb:
@@ -76,48 +81,37 @@ def main():
     
     if public_sb.status != SubnetStatus.RUNNING and public_sb.status != SubnetStatus.ERROR:
         print(f"Defining {HOST_PUBLIC_NETWORK}")
-        public_sb.define_net(db)
+        # public_sb.define_net(db)
+        SubnetController.define(db, None, None, public_sb)
 
-            
+    """
     # sb = Subnet('192.168.10.0/24', 'L2', 'brl2').save(db)
     # sb.define_net(db)
     
     # sb.undefine_net(db)
     # sb.delete(db)
+    """
     
     # USE THIS COMMAND TO UNDEFINE
-    # public_sb.undefine_net(db)
+    # SubnetController.undefine(db, public_sb)
     # public_sb.delete(db)
-    # infra_sb.undefine_net(db)
+    # SubnetController.undefine(db, infra_sb)
     # infra_sb.delete(db)
     
     
+    TENANT_NAME = 'Delta'
+    tenant = Tenant.find_by_name(db, TENANT_NAME)
+    if not tenant:
+        tenant = Tenant(TENANT_NAME).save(db)
     
-    # tenant = Tenant.find_by_name(db, 'Alfred')
-    # if not Tenant.find_by_name(db, 'Alfred'):
-    #     tenant = Tenant('Alfred').save(db)
-    
-    # vpc = tenant.get_vpc_by_name(db, 'vpc1')
-    # if not vpc:
-    #     vpc: VPC = tenant.create_vpc(db, 'vpc1', 'east')
+    VPC_NAME = 'vpc1'
+    vpc = TenantController.get_vpc_by_tenant_vpc_name(db, tenant, VPC_NAME)
+    if not vpc:
+        vpc: VPC = TenantController.create_vpc(db, tenant, VPC_NAME, 'east')
 
-    # sb1 = vpc.create_subnet(db, '192.168.10.0/30', 'vm_net_1', 'br_net_1')
-    # sb2 = vpc.create_subnet(db, '192.30.20.0/30', 'vm_net_2', 'br_net_2')
-    # sb3 = vpc.create_subnet(db, '192.30.21.0/30', 'vm_net_3', 'br_net_3')
-    # sb4 = vpc.create_subnet(db, '192.30.22.0/30', 'vm_net_4', 'br_net_4')
+    VPCController.down(db, tenant, vpc)
     
-    # vm = VM('VM1', 1, 1, 10).save(db)
     
-    # vm.connect_to_network(db, sb1.get_id(), default=True)
-    # vm.connect_to_network(db, sb2.get_id(), load_balancing_interface = True)
-    # vm.connect_to_network(db, sb3.get_id(), load_balancing_interface = True)
-    # vm.connect_to_network(db, sb4.get_id(), load_balancing_interface = False)
-    # # vm.connect_to_network(db, sb2.get_id(), load_balancing_interface =True)
-    # vm.connect_to_network(db, public_sb.get_id(), load_balancing_interface = True)
-    
-    # for interface in vm.list_interfaces(db):
-    #     print(vm.name, interface.interface_name, Subnet.find_by_id(db, interface.subnet_id).network_name )
-    # # print_resources(db)
 
 
 if __name__ == '__main__':

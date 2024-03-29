@@ -18,19 +18,6 @@ class Tenant():
             self.save(db)
         return vpc
 
-    def add_vpc(self, db, vpc: VPC):
-        self.vpcs.append(vpc.get_id())
-        self.save(db)
-    
-    def delete_vpc(self, db, vpc: VPC):
-        vpc_id = vpc.get_id()
-        vpc.delete(db)
-        self.vpc.remove(vpc_id)
-        self.save(db)
-    
-    def list_vpcs(self, db) -> List[VPC]:
-        return [VPC.from_dict(data) for data in  list(db.vpc.find({'_id': {'$in': self.vpcs}}))]
-    
     def get_vpc_by_name(self, db, name):
         data = db.vpc.find_one({'name': name})
         if data:
