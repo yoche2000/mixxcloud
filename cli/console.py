@@ -2,6 +2,8 @@ import click
 import shutil
 import pyfiglet
 from controllers.tenant_controller import TenantController
+from controllers.vpc_controller import VPCController
+from models.tenant_model import Tenant
 from models.db_model import DB
 import traceback
 # sudo apt-get install -y python3-pyfiglet
@@ -24,7 +26,13 @@ tenantName = None
 def login():
     global tenantName
     click.echo()
-    tenantName = click.prompt(click.style("Enter your User ID: ", fg='yellow'), type=str)
+    click.secho("1: Create New User-ID.", fg='cyan')
+    click.secho("2: Login to Existing Account.", fg='cyan')
+    choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
+    if choice == 1:
+        pass
+    elif choice == 2:
+        tenantName = click.prompt(click.style("Enter your User ID: ", fg='yellow'), type=str)
     click.echo()
 
 def display_welcome(title = pyfiglet.figlet_format("- MIXXCLOUD -", font="slant"), message="Welcome to the Cloud Implementation by Sumalatha, Thomas, Karan & Deepak!! \U0001F44B \U0001F44B"):
@@ -67,11 +75,28 @@ def tenant():
     click.secho("4: List Subnets", fg='cyan')
     click.secho("5: List VMs", fg='cyan')
 
+    # Create tenant
+    click.echo()
+    choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
+
+    if choice == 1:
+        tenantName = click.prompt(click.style("Provide the Tenant Name:", fg='yellow'), type=str)
+        tenant = Tenant.find_by_name(db, tenantName)
+        if not tenant:
+            tenant = Tenant(tenantName).save(db)
+            message = "Tenant is created successfully!!"
+            click.secho(message, fg='red') 
+        else:
+            message = "There is a teant with this name already, please provide a different name"
+            click.secho(message, fg='red')
+    elif choice == 2:
+        tenantName = click.prompt(click.style("Provide the Tenant Name you want to delete:", fg='yellow'), type=str)
+        tenant = Tenant.find_by_name(db, tenantName)
+
 
 @cli.command()
 def vpc():
     display_welcome(title = pyfiglet.figlet_format("- VPC Console -", font="digital"), message="Choose an action to continue:")
-    print(f"Tenant Name:", tenantName)
     click.secho("1: Create VPC", fg='cyan')
     click.secho("2: Attach Subnet to VPC", fg='cyan')
     click.secho("3: Detach Subnet to VPC", fg='cyan')
@@ -79,19 +104,24 @@ def vpc():
     click.secho("5: List VPCs", fg='cyan')
     click.secho("6: Create Subnet", fg='cyan')
     click.secho("7: Delete Tenant", fg='cyan')
+    click.secho("8: Main Console", fg='cyan')
 
     # Create VPC
     click.echo()
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
 
     if choice == 1:
-        """
-        # Check the Controller Files
-        # Ask for inputs
-        TenantController.create_vpc(db, tenantname, vpcname, region)
-        """  
-        pass 
+        vpcName = click.prompt(click.style("Provide the VPC Name:", fg='yellow'), type=str)
+        region = click.prompt(click.style("Provide the region of your choice:", fg='yellow'), type=str)
+        if not TenantController.create_vpc(db, tenantName, vpcName, region):
+            click.secho("VPC Configuation is UnSuccessful!! \U000026A0\U0000FE0F", fg='red')
+            return -1
+        vpc = TenantController.get_vpc_by_tenant_vpc_name(db, tenantName, vpcName)
+        status = VPCController.up(db, tenantName, vpc)
+        message = "VPC Creation is Successful!! \U00002714\U0000FE0F" if status is True else "VPC Creation is UnSuccessful!! \U000026A0\U0000FE0F" 
+        click.secho(message, fg='red')
     else:
+        main()
         pass
 
 @cli.command()
@@ -99,9 +129,22 @@ def loadbalancer():
     display_welcome(title = pyfiglet.figlet_format("- Load Balancer Console -", font="digital"), message="Choose an action to continue:")
 
 def main():
-    display_welcome()
-    login()
-    cli()
+    command = click.prompt(click.style("Choose the console - vpc, vm, tenant, exit", fg='yellow'), type=str)
+    click.echo()
+    if command == "vpc":
+        vpc()
+    elif command == "vm":
+        vm()
+    elif command == "tenant":
+        tenant()
+    elif command == "exit":
+        click.secho("Good bye! \U0001F44B \U0001F44B", fg='green')
+        exit()
+    else:
+        click.secho("Invalid console chosen. Please try again.. \U0000274C", fg='red')
+    # cli()
 
 if __name__ == "__main__":
+    display_welcome()
+    login()
     main()

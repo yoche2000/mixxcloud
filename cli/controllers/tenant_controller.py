@@ -12,19 +12,21 @@ class TenantController:
         if isinstance(tenant, str):
             tenant = Tenant.find_by_name(db, tenant)
         vpcs = [ VPC.find_by_id(db, i) for i in tenant.vpcs]
+        print("Checking for any Conflicting VPCs..")
         found = False
         for vpc in vpcs:
             if vpc.name == name:
                 found = True
-                print("Cannot create vpc of same name")
-                break
+                print("Cannot create vpc of same name..")
+                return False
         if not found:
             vpc = VPC(name, region)
             vpc.save(db)
+            print("No Conflicting VPCs found, saving the configuration..")
             VPCController.create_router(db, tenant, vpc)
             tenant.vpcs.append(vpc.get_id())
             tenant.save(db)
-        return vpc
+        return True
     
     
     @staticmethod
