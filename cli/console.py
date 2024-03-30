@@ -7,8 +7,8 @@ from models.tenant_model import Tenant
 from models.db_model import DB
 import traceback
 # sudo apt-get install -y python3-pyfiglet
-# Usage from main.py: sudo python3 main.py [command]
-# Usage from console.py: sudo python3 console.py [command]
+# Usage from main.py: sudo python3 main.py
+# Usage from console.py: sudo python3 console.py
 
 def dbclient():
     db = DB()
@@ -28,11 +28,19 @@ def login():
     click.echo()
     click.secho("1: Create New User-ID.", fg='cyan')
     click.secho("2: Login to Existing Account.", fg='cyan')
+    click.secho("3: Exit", fg='cyan')
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
     if choice == 1:
-        pass
+        print("Tenant Function will be called here..")
+        exit()
     elif choice == 2:
         tenantName = click.prompt(click.style("Enter your User ID: ", fg='yellow'), type=str)
+    elif choice == 3:
+        click.secho("Good bye! \U0001F44B \U0001F44B", fg='green')
+        exit()
+    else:
+        click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
+        login()
     click.echo()
 
 def display_welcome(title = pyfiglet.figlet_format("- MIXXCLOUD -", font="slant"), message="Welcome to the Cloud Implementation by Sumalatha, Thomas, Karan & Deepak!! \U0001F44B \U0001F44B"):
@@ -41,11 +49,6 @@ def display_welcome(title = pyfiglet.figlet_format("- MIXXCLOUD -", font="slant"
     click.echo()
     click.echo()
 
-@click.group()
-def cli():
-    pass
-
-@cli.command()
 def vm():
     display_welcome(title = pyfiglet.figlet_format("- VM Console -", font="digital"), message="Choose an action to continue: \U0001F447")
     click.secho("1: Create VM", fg='cyan')
@@ -66,7 +69,6 @@ def vm():
     else:
         click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
 
-@cli.command()
 def tenant():
     display_welcome(title = pyfiglet.figlet_format("- Tenant Console -", font="digital"), message="Choose an action to continue:")
     click.secho("1: Create Tenant", fg='cyan')
@@ -93,8 +95,6 @@ def tenant():
         tenantName = click.prompt(click.style("Provide the Tenant Name you want to delete:", fg='yellow'), type=str)
         tenant = Tenant.find_by_name(db, tenantName)
 
-
-@cli.command()
 def vpc():
     display_welcome(title = pyfiglet.figlet_format("- VPC Console -", font="digital"), message="Choose an action to continue:")
     click.secho("1: Create VPC", fg='cyan')
@@ -106,7 +106,6 @@ def vpc():
     click.secho("7: Delete Tenant", fg='cyan')
     click.secho("8: Main Console", fg='cyan')
 
-    # Create VPC
     click.echo()
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
 
@@ -120,15 +119,17 @@ def vpc():
         status = VPCController.up(db, tenantName, vpc)
         message = "VPC Creation is Successful!! \U00002714\U0000FE0F" if status is True else "VPC Creation is UnSuccessful!! \U000026A0\U0000FE0F" 
         click.secho(message, fg='red')
+    elif choice == 8:
+        console()
     else:
-        main()
-        pass
+        click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
+        console()
 
-@cli.command()
 def loadbalancer():
     display_welcome(title = pyfiglet.figlet_format("- Load Balancer Console -", font="digital"), message="Choose an action to continue:")
 
-def main():
+def console():
+    click.echo("----------------------------------------------------")
     command = click.prompt(click.style("Choose the console - vpc, vm, tenant, exit", fg='yellow'), type=str)
     click.echo()
     if command == "vpc":
@@ -142,9 +143,9 @@ def main():
         exit()
     else:
         click.secho("Invalid console chosen. Please try again.. \U0000274C", fg='red')
-    # cli()
+        console()
 
 if __name__ == "__main__":
     display_welcome()
     login()
-    main()
+    console()
