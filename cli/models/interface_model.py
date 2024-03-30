@@ -3,7 +3,7 @@ from bson.objectid import ObjectId
 
 
 class Interface:
-    def __init__(self, ip_address, mac_address, network_mask, gateway, instance_id, subnet_id, interface_name, _id = None):
+    def __init__(self, ip_address, mac_address, network_mask, gateway, instance_id, subnet_id, interface_name, load_balancer = None, _id = None):
         self.ip_address = ip_address
         self.mac_address = mac_address
         self.network_mask = network_mask
@@ -11,6 +11,7 @@ class Interface:
         self.instance_id = instance_id
         self.subnet_id = subnet_id
         self.interface_name = interface_name
+        self.load_balancer = load_balancer
         self._id = _id
 
     def save(self, db):
@@ -33,6 +34,7 @@ class Interface:
                  "instance_id": self.instance_id,
                  "subnet_id": self.subnet_id,
                  "interface_name": self.interface_name,
+                 "load_balancer": self.load_balancer,
                  }
     
     def delete(self, db):
@@ -52,6 +54,7 @@ class Interface:
                           data['instance_id'], 
                           data['subnet_id'], 
                           data['interface_name'], 
+                          data['load_balancer'], 
                           _id = data['_id']
                           )
     
@@ -81,6 +84,8 @@ class Interface:
         
         # lb balancer naming ep1, ep2, ep3 ......
         # self.interface_name = 'enp1s0'
+        if load_balancing_interface:
+            return 'ep1'
         DEFAULT_INTERFACE_NAME = 'enp1s0'
         if isinstance(instance_id, str):
             instance_id = ObjectId(instance_id)

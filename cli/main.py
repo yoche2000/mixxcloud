@@ -7,6 +7,7 @@ from models.tenant_model import Tenant
 from models.interface_model import Interface
 from models.subnet_model import Subnet, SubnetStatus, SubnetType
 from models.vpc_model import VPC
+from models.lb_model import LBType
 # from models.vpc_model import VPC
 import traceback
 from utils.utils import Utils
@@ -110,7 +111,12 @@ def main():
         vpc: VPC = TenantController.create_vpc(db, tenant, VPC_NAME, 'east')
 
     # vpc.
-    VPCController.down(db, tenant, vpc)
+    VPCController.up(db, tenant, vpc)
+    
+    customer_sb = Subnet.find_by_id(db, vpc.subnets[0])
+    vm = VM.find_by_id(db, vpc.routerVM)
+    vm.state = VMState.UNDEFINED
+    vm.save(db)
 
     # vm = VM.find_by_id(db, vpc.routerVM)
     # vm.state = VMState.ERROR
@@ -119,12 +125,12 @@ def main():
     # VPCController.up(db, tenant, vpc)
 
 
-    # VPCController.down(db, tenant, vpc)
+    VPCController.down(db, tenant, vpc)
         
     # customer_subnet = Subnet('10.11.10.0/24', 'CS_NW_1', 'CS_BR_2').save(db)
     # SubnetController.define(db, tenant, vpc, customer_subnet)
 
-    VPCController.create_subnet(db, tenant, vpc, '10.15.15.0/24', 'CS_NW_3', 'CS_BR_3')    
+    # VPCController.create_subnet(db, tenant, vpc, '10.15.15.0/24', 'CS_NW_3', 'CS_BR_3')
     
     # vm1 = VM('test_vm', 1, 1, '10G').save(db)
 
@@ -138,13 +144,47 @@ def main():
     # VPCController.up(db, tenant, vpc)
     # VMController.define(db, vm1.get_id())
     
+    # customer_subnet = Subnet('10.11.10.0/24', 'CS_NW_1', 'CS_NW_2')
+    
+    
+    # VMController.connect_to_network(db, customer_subnet.get_id(), vm1.get_id(), default=True)
+    
+    VPCController.up(db, tenant, vpc)
+    
+    
+    # vm1 = VM.find_by_name(db, 'Cst_VM1').save(db)
+    # vm2 = VM.find_by_name(db, 'Cst_VM2').save(db)
+    # vm3 = VM.find_by_name(db, 'Cst_VM3').save(db)
+    # vm1 = VM('Cst_VM1', 1, 1024, '10G', vpc.get_id()).save(db)
+    # vm2 = VM('Cst_VM2', 1, 1024, '10G', vpc.get_id()).save(db)
+    # vm3 = VM('Cst_VM3', 1, 1024, '10G', vpc.get_id()).save(db)
+    
+    # VMController.connect_to_network(db, vpc.get_id(), customer_sb.get_id(), vm1.get_id(), default=True)
+    # VMController.connect_to_network(db, vpc.get_id(), customer_sb.get_id(), vm2.get_id(), default=True)
+    # VMController.connect_to_network(db, vpc.get_id(), customer_sb.get_id(), vm3.get_id(), default=True)
+    
+    # VMController.start(db, vm1.get_id())
+    # VMController.start(db, vm2.get_id())
+    # VMController.start(db, vm3.get_id())
+    
+    # VMController.create_load_balancer(db, vpc,  vpc.routerVM, 'app1', '10.10.10.3', LBType.IAAS)
+    # VMController.rm_load_balancer(db, vpc,  vpc.routerVM, 'app1')
+    
+    # VMController.add_lb_ip_target(db, vpc.routerVM, 'app1', '10.15.15.2')
+    # VMController.add_lb_ip_target(db, vpc.routerVM, 'app1', '10.15.15.3')
+    # VMController.add_lb_ip_target(db, vpc.routerVM, 'app1', '10.15.15.4')
+    
+    
+    
+    
+    
+    
     
 
 
 if __name__ == '__main__':
     if is_root():
-        db  = main()
-        # console.main(db)
+        main()
     else:
         print("Run the script as sudo")
         exit(1)
