@@ -1,9 +1,13 @@
 import click
 import shutil
 import pyfiglet
+from controllers import TenantController
+from models.db_model import DB
+import traceback
 # sudo apt-get install -y python3-pyfiglet
 # Usage from main.py: sudo python3 main.py [command]
 # Usage from console.py: sudo python3 console.py [command]
+
 
 
 def display_welcome(title = pyfiglet.figlet_format("- MIXXCLOUD -", font="slant"), message="Welcome to the Cloud Implementation by Sumalatha, Thomas, Karan & Deepak!! \U0001F44B \U0001F44B"):
@@ -20,9 +24,10 @@ def cli():
 def vm():
     display_welcome(title = pyfiglet.figlet_format("- VM Console -", font="digital"), message="Choose an action to continue: \U0001F447")
     click.secho("1: Create VM", fg='cyan')
-    click.secho("2: Read VM", fg='cyan')
-    click.secho("3: Update VM", fg='cyan')
+    click.secho("2: Attach VM to Subnet", fg='cyan')
+    click.secho("3: Detach VM to Subnet", fg='cyan')
     click.secho("4: Delete VM", fg='cyan')
+    click.secho("5: VM Info", fg='cyan')
     # Need to add more options, if required
     click.echo()
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
@@ -39,14 +44,51 @@ def vm():
 @cli.command()
 def tenant():
     display_welcome(title = pyfiglet.figlet_format("- Tenant Console -", font="digital"), message="Choose an action to continue:")
+    click.secho("1: Create Tenant", fg='cyan')
+    click.secho("2: Delete Tenant", fg='cyan')
+    click.secho("3: List VPCs", fg='cyan')
+    click.secho("4: List Subnets", fg='cyan')
+    click.secho("5: List VMs", fg='cyan')
+
 
 @cli.command()
 def vpc():
     display_welcome(title = pyfiglet.figlet_format("- VPC Console -", font="digital"), message="Choose an action to continue:")
+    click.secho("1: Create VPC", fg='cyan')
+    click.secho("2: Attach Subnet to VPC", fg='cyan')
+    click.secho("3: Detach Subnet to VPC", fg='cyan')
+    click.secho("4: Delete VPC", fg='cyan')
+    click.secho("5: List VPCs", fg='cyan')
+    click.secho("6: Create Subnet", fg='cyan')
+    click.secho("7: Delete Tenant", fg='cyan')
 
-@cli.command()
-def subnet():
-    display_welcome(title = pyfiglet.figlet_format("- Subnet Console -", font="digital"), message="Choose an action to continue:")
+    
+
+    # Create VPC
+    click.echo()
+    choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
+
+    if choice == 1:
+        """
+        # Check the Controller Files
+        # Ask for inputs
+        TenantController.create_vpc(db, tenantname, vpcname, region)
+        """  
+        pass 
+    else:
+        pass
+
+def dbclient():
+    db = DB()
+    try:
+        client = db.get_client()
+    except Exception:
+        traceback.print_exc()
+        exit(1)
+    db = client['ln']
+    return db
+
+db = dbclient()
 
 @cli.command()
 def loadbalancer():

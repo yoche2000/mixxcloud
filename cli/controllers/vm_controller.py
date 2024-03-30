@@ -5,7 +5,7 @@ from bson.objectid import ObjectId
 from models.interface_model import Interface
 from models.vm_model import VM, VMState
 from models.subnet_model import Subnet
-from commands import VM_CRUD_Workflows
+from commands import VM_CRUD_Workflows, ROUTER_CRUD_Workflows
 from utils.ip_utils import IPUtils
 
 class VMController:
@@ -27,24 +27,34 @@ class VMController:
             vm.state = VMState.STARTING
             vm.save(db)
             
-            interfaces = db.interface.find({'instance_id': vm._id})
+            interfaces = db.interface.find({'instance_id': vm.get_id()})
+            print(type(interfaces))
             formatted_interface = []
             for interface in interfaces:
+                print(interface)
                 tmp = Interface.from_dict(interface)
-                print(tmp.json())
+                
+                print("tmp:", tmp)
                 tmp1 = db.subnet.find_one({'_id': tmp.subnet_id})
-                print(tmp1)
+                print("tmp1:", tmp1)
                 conn_nw = Subnet.from_dict(tmp1)
                 out = {}
                 out['network_name'] = conn_nw.network_name
-                out['iface_name'] = tmp.interface_name
-                out['ipaddress'] = tmp.ip_address
+                out['iface_name'] = tmp.interface_name 
+                out['ipaddress'] = tmp.ip_address + "/" + conn_nw.get_host_mask()
                 out['dhcp'] = False
                 if tmp.gateway:
                     out['gateway'] = tmp.gateway
                 formatted_interface.append(out)
+            
             print(formatted_interface)
-            if VM_CRUD_Workflows.run_ansible_playbook_for_vm_definition(vm.name, vm.vCPU, vm.vMem, vm.disk_size, formatted_interface):
+            print(vm.name, vm.vCPU, vm.vMem, vm.disk_size, formatted_interface)
+            if vm.isRouterVM:
+                ansible_func = ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_definition
+            else:
+                ansible_func = VM_CRUD_Workflows.run_ansible_playbook_for_vm_definition
+            print(vm.name, vm.vCPU, vm.vMem, vm.disk_size, formatted_interface)
+            if ansible_func(vm.name, vm.vCPU, vm.vMem, vm.disk_size, formatted_interface):
                 vm.state = VMState.DEFINED
                 vm.save(db)
             else:
@@ -74,7 +84,11 @@ class VMController:
             vm.save(db)
 
             print("Undefine called")
-            if VM_CRUD_Workflows.run_ansible_playbook_for_vm_deletion(vm.name):
+            if vm.isRouterVM:
+                ansible_func = ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_deletion
+            else:
+                ansible_func = VM_CRUD_Workflows.run_ansible_playbook_for_vm_deletion
+            if ansible_func(vm.name):
                 vm.state = VMState.UNDEFINED
                 vm.save(db)
             else:
@@ -106,8 +120,11 @@ class VMController:
                 return True
             vm.state = VMState.UPDATING
             vm.save(db)
-            
-            if VM_CRUD_Workflows.run_ansible_playbook_for_vm_start(vm.name):
+            if vm.isRouterVM:
+                ansible_func = ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_start
+            else:
+                ansible_func = VM_CRUD_Workflows.run_ansible_playbook_for_vm_start
+            if ansible_func(vm.name):
                 vm.state = VMState.RUNNING
                 vm.save(db)
             else:

@@ -199,13 +199,9 @@ VM_CRUD_Workflows.run_ansible_playbook_for_vm_creation(vm_name, vcpu, mem, disk_
 """
 2. VM Creation - Define
 
-<<<<<<< Updated upstream
-vm_name = "ProjectGuestVM-3"
-=======
 
 
 vm_name = "ProjectGuestVM-4"
->>>>>>> Stashed changes
 vcpu = 2
 mem = 2048
 disk_size = "12G"

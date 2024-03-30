@@ -99,25 +99,52 @@ def main():
     # infra_sb.delete(db)
     
     
-    TENANT_NAME = 'Delta'
+    TENANT_NAME = 'Delta1'
     tenant = Tenant.find_by_name(db, TENANT_NAME)
     if not tenant:
         tenant = Tenant(TENANT_NAME).save(db)
     
-    VPC_NAME = 'vpc1'
+    VPC_NAME = 'VPC7'
     vpc = TenantController.get_vpc_by_tenant_vpc_name(db, tenant, VPC_NAME)
     if not vpc:
         vpc: VPC = TenantController.create_vpc(db, tenant, VPC_NAME, 'east')
 
+    # vpc.
     VPCController.down(db, tenant, vpc)
+
+    # vm = VM.find_by_id(db, vpc.routerVM)
+    # vm.state = VMState.ERROR
+    # vm.save(db)
+
+    # VPCController.up(db, tenant, vpc)
+
+
+    # VPCController.down(db, tenant, vpc)
+        
+    # customer_subnet = Subnet('10.11.10.0/24', 'CS_NW_1', 'CS_BR_2').save(db)
+    # SubnetController.define(db, tenant, vpc, customer_subnet)
+
+    VPCController.create_subnet(db, tenant, vpc, '10.15.15.0/24', 'CS_NW_3', 'CS_BR_3')    
+    
+    # vm1 = VM('test_vm', 1, 1, '10G').save(db)
+
+    
+    
+    # VPCController.up(db, tenant, vpc)
+# 
+    
+    # VMController.connect_to_network(db, customer_subnet.get_id(), vm1.get_id(), default=True)
+    
+    # VPCController.up(db, tenant, vpc)
+    # VMController.define(db, vm1.get_id())
     
     
 
 
 if __name__ == '__main__':
     if is_root():
-        main()
-        # console.main()
+        db  = main()
+        # console.main(db)
     else:
         print("Run the script as sudo")
         exit(1)

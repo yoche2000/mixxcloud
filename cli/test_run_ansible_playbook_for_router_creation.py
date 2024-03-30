@@ -1,7 +1,7 @@
 from commands import ROUTER_CRUD_Workflows
 
 
-vm_name = "RouterVM"
+vm_name = "RouterVM-Copy-1"
 vcpu = 2
 mem = 2048
 disk_size = "12G"

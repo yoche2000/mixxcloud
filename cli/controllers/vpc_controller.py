@@ -68,6 +68,7 @@ class VPCController:
         except:
             return False
         
+    # use
     @staticmethod
     def create_subnet(db, tenant: Tenant | str, vpc: VPC | str, cidr: str, network_name: str, bridge_name: str) -> Subnet | None:
         try:
@@ -92,15 +93,21 @@ class VPCController:
             if vpc.routerVM is None:
                 VPCController.create_router(db, tenant, vpc)
             # router_vm:VM = VM.find_by_id(db, vpc.routerVM)
-
+            VMController.undefine(db, vpc.routerVM)
             VMController.connect_to_network(db, tmp.get_id(), vpc.routerVM, is_gateway=True)
             
+            # TODO: Modify states for when VPC is running
+            if vpc.status == VPCStatus.RUNNING:
+                SubnetController.define(db, tenant, vpc, tmp)
+                VMController.start(db, vpc.routerVM)
+
             return tmp
         except Exception as e :
             print('Exception occured', e)
             traceback.print_exc()
             return None
         
+    # use
     @staticmethod
     def remove_subnet(db, vpc: VPC | str, cidr: str) -> bool:
         try:
@@ -150,7 +157,7 @@ class VPCController:
             if vpc.routerVM is not None:
                 return True
             name = f'RVM_{tenant.name.upper()}_{vpc.name.upper()}'
-            router_vm = VM(name, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE)
+            router_vm = VM(name, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, isRouterVM = True)
             router_vm.save(db)
             vpc.routerVM = router_vm.get_id()
             vpc.save(db)
@@ -160,7 +167,8 @@ class VPCController:
             return True
         except:
             return False
-        
+    
+    # use
     @staticmethod
     def up(db, tenant: Tenant | str, vpc: VPC | str):
         try:

@@ -5,6 +5,8 @@ from bson.objectid import ObjectId
 from models.vpc_model import VPC
 
 class TenantController:
+    # use
+    # db, tenant_name, vpc_name, region
     @staticmethod
     def create_vpc(db, tenant: Tenant | str, name: str, region: str):
         if isinstance(tenant, str):
@@ -35,6 +37,8 @@ class TenantController:
             tenant.vpcs.append(vpc_id)
         tenant.save(db)
     
+    # use
+    # db, tenant_name, vpc_id (of the vpc you want to delete)
     @staticmethod
     def delete_vpc(db, tenant: Tenant | str, vpc_id: ObjectId | str):
         if isinstance(tenant, str):
