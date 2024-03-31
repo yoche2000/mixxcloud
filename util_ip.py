@@ -19,7 +19,7 @@ def weight_to_prob(ip_weight_list):
     result = []
     for ip in ip_weight_list.keys():
         perc =  ip_weight_list[ip] / sum(ip_weight_list.values())
-        ip_list[ip] = 0
+        ip_weight_list[ip] = 0
         result.append({ip:perc})
     return(result)
 

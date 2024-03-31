@@ -85,8 +85,14 @@ class VPCController:
             conflict = False
             tmp = Subnet(cidr, network_name, bridge_name)
             cidr: IPv4Network = tmp.get_ipobj()
+            if db.subnet.find_one({"network_name":network_name}):
+                print(f"Cannot create network with libvirt {network_name} - Conflict exists")
+                return None
+            if db.subnet.find_one({"bridge_name":bridge_name}):
+                print(f"Cannot create network with birdge {bridge_name} - Conflict exists")
+                return None
             for subnet in subnets:
-                if cidr.overlaps(subnet.get_ipobj()):
+                if cidr.overlaps(subnet.get_ipobj()) or subnet.network_name == network_name or subnet.bridge_name == bridge_name:
                     conflict = True
                     break
             if conflict:
@@ -99,7 +105,7 @@ class VPCController:
                 VPCController.create_router(db, tenant, vpc)
             # router_vm:VM = VM.find_by_id(db, vpc.routerVM)
             VMController.undefine(db, vpc.routerVM)
-            VMController.connect_to_network(db, tmp.get_id(), vpc.routerVM, is_gateway=True)
+            VMController.connect_to_network(db, vpc.get_id(), tmp.get_id(), vpc.routerVM, is_gateway=True)
             
             # TODO: Modify states for when VPC is running
             if vpc.status == VPCStatus.RUNNING:
@@ -162,13 +168,13 @@ class VPCController:
             if vpc.routerVM is not None:
                 return True
             name = f'RVM_{tenant.name.upper()}_{vpc.name.upper()}'
-            router_vm = VM(name, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, isRouterVM = True)
+            router_vm = VM(name, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, vpc.get_id(), isRouterVM = True)
             router_vm.save(db)
             vpc.routerVM = router_vm.get_id()
             vpc.save(db)
             
             sb = Subnet.find_by_name(db, HOST_NAT_NETWORK)
-            VMController.connect_to_network(db, sb.get_id(), router_vm.get_id(), default=True)
+            VMController.connect_to_network(db, vpc.get_id(), sb.get_id(), router_vm.get_id(), default=True)
             return True
         except:
             return False
@@ -196,7 +202,7 @@ class VPCController:
                 if vpc.routerVM is None:
                     VPCController.create_router(db, tenant, vpc)
                     for sb in sbs:
-                        VMController.connect_to_network(db, sb, vpc.routerVM, is_gateway=True)
+                        VMController.connect_to_network(db, vpc.get_id(), sb, vpc.routerVM, is_gateway=True)
                 for sb in sbs:
                     SubnetController.define(db, tenant, vpc, Subnet.find_by_id(db, sb))
                 VMController.start(db, vpc.routerVM)

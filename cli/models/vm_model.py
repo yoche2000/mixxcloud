@@ -24,16 +24,17 @@ def format_disk_size(disk_size):
         return f"{disk_size}G"
 
 class VM:
-    def __init__(self, name, vCPU, vMem, disk_size, interfaces: List[str] | None = None, isRouterVM = False, state = VMState.UNDEFINED.name, _id = None):
+    def __init__(self, name, vCPU, vMem, disk_size, vpc_id, interfaces: List[str] | None = None, isRouterVM = False, state = VMState.UNDEFINED.name, _id = None, load_balancer = None):
         self._id = _id
         self.name = name
         self.vCPU = vCPU
         self.vMem = vMem
         self.disk_size = format_disk_size(disk_size)
+        self.vpc_id = vpc_id
         self.state = VMState[state]
         self.interfaces = interfaces or []
         self.isRouterVM = isRouterVM 
-        self.load_balancer_info = None
+        self.load_balancer = load_balancer
 
 
     def list_interfaces(self, db):
@@ -41,6 +42,8 @@ class VM:
 
     def save(self, db):
         if self._id is None:
+            if db.vm.find_one({"name": self.name}):
+                raise Exception("Duplicate vm name, cannot create vm")
             obj = db.vm.insert_one(self.to_dict())
             inserted_id = obj.inserted_id
             self._id = inserted_id
@@ -57,9 +60,11 @@ class VM:
                 "vCPU": self.vCPU,
                 "vMem": self.vMem,
                 "disk_size": self.disk_size,
+                "vpc_id": self.vpc_id,
                 "interfaces": self.interfaces,
                 "isRouterVM": self.isRouterVM,
                 "state": self.state.name,
+                "load_balancer": self.load_balancer,
                }
     
     def delete(self, db):
@@ -76,9 +81,11 @@ class VM:
                   data['vCPU'], 
                   data['vMem'], 
                   data['disk_size'], 
+                  data['vpc_id'], 
                   data['interfaces'],
                   data['isRouterVM'],
                   state=data['state'],
+                  load_balancer=data['load_balancer'],
                   _id = data['_id'])
 
     @staticmethod
