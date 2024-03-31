@@ -63,6 +63,7 @@ class SubnetController:
         SubnetController.check_is_not_empty(bridgename)
         os.system("sudo brctl addbr "+bridgename)
         os.system("sudo ip link set up "+bridgename)
+        os.system(f"sudo brctl stp {bridgename} on")
         t = subprocess.check_output("ip link show "+bridgename, shell=True)
         if not "UP" in str(t):
             raise Exception("Error creating bridge")
