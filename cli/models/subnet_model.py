@@ -116,5 +116,6 @@ class Subnet:
             id = ObjectId(id)
         data = db.subnet.find_one({'_id': id})
         if data:
+            print(data)
             return Subnet.from_dict(data)
         return None

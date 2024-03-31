@@ -33,10 +33,23 @@ def login():
     click.secho("3: Exit", fg='cyan')
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
     if choice == 1:
-        print("Tenant Function will be called here..")
+        tenantName = click.prompt(click.style("Please enter the tenant name", fg='yellow'), type=str)
+        tenant = Tenant.find_by_name(db, tenantName)
+        if not tenant:
+            tenant = Tenant(tenantName).save(db)
+            message = "Tenant is created successfully!!"
+            click.secho(message, fg='red') 
+        else:
+            message = "There is a teant with this name already, please provide a different name"
+            click.secho(message, fg='red')
         exit()
     elif choice == 2:
         tenantName = click.prompt(click.style("Enter your User ID: ", fg='yellow'), type=str)
+        tenant = Tenant.find_by_name(db, tenantName)
+        if not tenant:
+            message = "There is no tenant with this name, please provide a different name.."
+            click.secho(message, fg='red')
+            exit()
     elif choice == 3:
         click.secho("Good bye! \U0001F44B \U0001F44B", fg='green')
         exit()
@@ -73,29 +86,42 @@ def vm():
 
 def tenant():
     display_welcome(title = pyfiglet.figlet_format("- Tenant Console -", font="digital"), message="Choose an action to continue:")
-    click.secho("1: Create Tenant", fg='cyan')
-    click.secho("2: Delete Tenant", fg='cyan')
-    click.secho("3: List VPCs", fg='cyan')
-    click.secho("4: List Subnets", fg='cyan')
-    click.secho("5: List VMs", fg='cyan')
+    click.secho("1: Delete Tenant", fg='cyan')
+    click.secho("2: List VPCs", fg='cyan')
+    click.secho("3: List Subnets", fg='cyan')
+    click.secho("4: List VMs", fg='cyan')
 
     # Create tenant
     click.echo()
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
 
     if choice == 1:
-        tenantName = click.prompt(click.style("Provide the Tenant Name:", fg='yellow'), type=str)
         tenant = Tenant.find_by_name(db, tenantName)
+        print(tenant)
         if not tenant:
-            tenant = Tenant(tenantName).save(db)
-            message = "Tenant is created successfully!!"
-            click.secho(message, fg='red') 
+            message = "There is no tenant with this name, please try with the correct name"
+            click.secho(message, fg='red')
         else:
-            message = "There is a teant with this name already, please provide a different name"
+            tenant.delete(db)
+            message = "The given tenant and its associated VPCs have been deleted"
             click.secho(message, fg='red')
     elif choice == 2:
-        tenantName = click.prompt(click.style("Provide the Tenant Name you want to delete:", fg='yellow'), type=str)
-        tenant = Tenant.find_by_name(db, tenantName)
+        VPCList = TenantController.list_vpcs(db, tenantName)
+        for vpc in VPCList:
+            print(vpc.name)   
+    elif choice == 3:
+       vpcName = click.prompt(click.style("Enter the vpc name for which you want to display Subnets ", fg='yellow'), type=str)
+       subnetList = VPCController.list_subnets(db,vpcName)
+
+       for subnet in subnetList:
+            print(subnet.network_name + ": " + subnet.subnet)
+    elif choice == 4:
+        networkName = click.prompt(click.style("Enter the network name for which you want to display VMs ", fg='yellow'), type=str)
+        subnet_Id = Subnet.find_by_name(db,networkName)._id
+        Interfaces = db.interface.find()
+        for interface in Interfaces:
+            print(interface.ip_address)
+
 
 def vpc():
     display_welcome(title = pyfiglet.figlet_format("- VPC Console -", font="digital"), message="Choose an action to continue:")
@@ -142,11 +168,8 @@ def vpc():
         subnetName = vpcName+"-"+subnetName
         click.secho(f"Subnet ID: {subnetName}", fg='green')
         status = VPCController.remove_subnet(db, vpcName, subnetName)
-        message = "Subnet Deletion is Successful!! \U00002714\U0000FE0F" if status is not None else "Subnet Deletion is UnSuccessful!! \U000026A0\U0000FE0F" 
+        message = "Subnet Deletion is Successful!! \U00002714\U0000FE0F" if status is True else "Subnet Deletion is UnSuccessful!! \U000026A0\U0000FE0F" 
         click.secho(message, fg='red')
-
-
-
 
     elif choice == 8:
         console()

@@ -1,19 +1,11 @@
 vms:
-- vm_name: RVM_B_B-A2
+- vm_name: RVM_A_A-A
   vcpu: 2
   mem: 2048
   disk_size: 10G
   interfaces:
   - network_name: host-nat-network
     iface_name: enp1s0
-    ipaddress: 172.16.0.4/12
+    ipaddress: 172.16.0.2/12
     dhcp: false
     gateway: 172.16.0.1
-  - network_name: B-A2-AS1
-    iface_name: enp2s0
-    ipaddress: 192.168.10.1/24
-    dhcp: false
-  - network_name: B-A2-AS1
-    iface_name: enp3s0
-    ipaddress: 192.168.20.1/24
-    dhcp: false

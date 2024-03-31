@@ -114,7 +114,7 @@ class VMController:
             vm.state = VMState.DELETING
             vm.save(db)
 
-            print("Undefine called")
+            print("Undefine called..")
             if vm.isRouterVM:
                 ansible_func = ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_deletion
             else:
@@ -125,7 +125,7 @@ class VMController:
             else:
                 vm.state = VMState.ERROR
                 vm.save(db)
-
+            print("Undefine successfull..")
         except Exception:
             print("Exception")
             if vm.state != VMState.ERROR:
@@ -323,13 +323,14 @@ class VMController:
             subnet_id = ObjectId(subnet_id)
         if isinstance(vm_id, str):
             vm_id = ObjectId(vm_id)
-        vm = VM.find_by_id(vm_id)
+        vm = VM.find_by_id(db, vm_id)
         data = db.interface.find_one({'instance_id': vm_id, 'subnet_id': subnet_id})
         if data:
             interface = Interface.from_dict(data)
             vm.interfaces.remove(interface.get_id())
             interface.delete(db)
             vm.save(db)
+            print("Subnet is removed from Interfaces collection..")
             
     @staticmethod
     def get_ip_by_vm_name_and_cidr(db, vm_name: str, cidr: str):

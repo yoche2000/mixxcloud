@@ -102,7 +102,7 @@ def main():
     # SubnetController.undefine(db, infra_sb)
     # infra_sb.delete(db)
     
-    
+    """
     TENANT_NAME = 'A'
     tenant = Tenant.find_by_name(db, TENANT_NAME)
     if not tenant:
@@ -112,7 +112,7 @@ def main():
     tenant = Tenant.find_by_name(db, TENANT_NAME)
     if not tenant:
         tenant = Tenant(TENANT_NAME).save(db)
-    
+    """
     """
     VPC_NAME = 'VPC7'
     vpc = TenantController.get_vpc_by_tenant_vpc_name(db, tenant, VPC_NAME)
@@ -121,13 +121,14 @@ def main():
     """
     # vpc.
     # VPCController.down(db, tenant, vpc)
+    """
     VPCController.up(db, tenant, vpc)
     
     customer_sb = Subnet.find_by_id(db, vpc.subnets[0])
     vm = VM.find_by_id(db, vpc.routerVM)
     vm.state = VMState.UNDEFINED
     vm.save(db)
-
+    """
     # vm = VM.find_by_id(db, vpc.routerVM)
     # vm.state = VMState.ERROR
     # vm.save(db)

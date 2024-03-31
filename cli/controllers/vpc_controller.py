@@ -126,34 +126,47 @@ class VPCController:
                 vpc = VPC.find_by_name(db, vpc)
             if not vpc:
                 raise Exception("VPC not found")
-            subnets: List[Subnet] = [Subnet.find_by_id(db, subnet_id) for subnet_id in vpc.subnets]
+            subnets: List[Subnet] = []
+            for subnet_id in vpc.subnets:
+                subnetID = Subnet.find_by_id(db, subnet_id) 
+                if subnetID is not None:
+                    subnets.append(subnetID)
+            print(f"Subnets attached to the VPC: {subnets}")
             subnet = None
             for i in subnets:
                 if i.network_name == network_name:
                    subnet = i
-            
-            connected_interfaces = db.interface.find({'subnet_id': subnet})
+            SubnetController.undefine(db, subnet)
+            connected_interfaces = db.interface.find({'subnet_id': subnet.get_id()})
+            print(f"All the attached interfaces to the subnet for the Subnet - {subnet.network_name} are: {connected_interfaces}.")
             for_restart = []
             for interface in connected_interfaces:
+                print("Entered the loop..")
                 intf = Interface.from_dict(interface)
                 vm = VM.find_by_id(db, intf.instance_id)
                 if vm.state == VMState.RUNNING:
                     for_restart.append(vm.get_id())
+                print("VM ID Before Shutdown:", vm.get_id())
                 VMController.undefine(db, vm.get_id())
                 VMController.disconnect_from_network(db, vm.get_id(), subnet.get_id())
                 
             for vm_id in for_restart:
+                print("Restarting the VM:", vm_id)
                 vm = VM.find_by_id(db, vm_id)
-                vm.start(db)
+                VMController.define(db,vm.get_id())
+                VMController.start(db,vm.get_id())
+                # vm.start(db)
             
-            SubnetController.undefine(db, subnet)
+            
+            subnet_ = subnet.get_id()
             subnet.delete(db)
-            
-            vpc.subnets.remove(subnet.get_id())
+            print(f"Subnet which is being removed is: {subnet.get_id()}")
+            vpc.subnets.remove(subnet_)
             vpc.save(db)
 
             return True    
-        except:
+        except Exception as error:
+            print(f"Issue in deleting the Subnet. Error details: {error}")
             return False
     
     @staticmethod        

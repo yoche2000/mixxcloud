@@ -1,6 +1,9 @@
 import click
 import shutil
 import pyfiglet
+from models.vpc_model import VPC
+from controllers.vm_controller import VMController
+from models.vm_model import VM
 from controllers.tenant_controller import TenantController
 from controllers.vpc_controller import VPCController
 from models.interface_model import Interface
@@ -77,15 +80,37 @@ def vm():
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
 
     if choice == 1:
+        vpcName = click.prompt(click.style("Enter VPC Name for which you want to create a VM: ", fg='yellow'), type=str)
+        vpcId = VPC.find_by_name(db,vpcName).get_id()
         vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
         vCPU = click.prompt(click.style("Enter vCPU for the VM: ", fg='yellow'), type=int)
-        vMem = click.prompt(click.style("Enter vCPU for the VM: ", fg='yellow'), type=int)
-        disk_size = click.prompt(click.style("Enter disk_size for the VM: ", fg='yellow'), type=int)
-        #interfaces = 
+        vMem = click.prompt(click.style("Enter vMem for the VM: ", fg='yellow'), type=int)
+        disk_size = click.prompt(click.style("Enter disk_size for the VM: ", fg='yellow'), type=str)
+        network = click.prompt(click.style("Enter VPC network name for the VM: ", fg='yellow'), type=str)
+        subnetId = Subnet.find_by_name(db,network).get_id()
+        vm = VM(vmName,vCPU,vMem,disk_size,vpcId)
+        #vm.json()
+        vm.save(db)
+        vmId = vm.find_by_name(db,vmName).get_id()
+        #VMController.define(db,vmId.get_id())
+        VMController.connect_to_network(db,vpcId,subnetId,vmId,default=True)
+        VMController.start(db, vmId)
+        
     elif choice == 2:
-        pass
+        vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
+        vmId = VM.find_by_name(db,vmName)
+        vpcId = vmId.vpc_id
+        network = click.prompt(click.style("Enter VPC network name you want to add for the VM: ", fg='yellow'), type=str)
+        subnetId = Subnet.find_by_name(db,network).get_id()
+        VMController.connect_to_network(db,vpcId,subnetId,vmId.get_id())
+
     elif choice == 3:
-        pass
+        vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
+        vmId = VM.find_by_name(db,vmName)
+        vpcId = vmId.vpc_id
+        network = click.prompt(click.style("Enter VPC network name you want to add for the VM: ", fg='yellow'), type=str)
+        subnetId = Subnet.find_by_name(db,network).get_id()
+        VMController.disconnect_from_network(db,vmId.get_id(),subnetId)
     else:
         click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
 
@@ -121,16 +146,13 @@ def tenant():
        for subnet in subnetList:
             print(subnet.network_name + ": " + subnet.subnet)
     elif choice == 4:
-        networkName = click.prompt(click.style("Enter the network name for which you want to display VMs ", fg='yellow'), type=str)
-        subnet_Id = Subnet.find_by_name(db,networkName)._id
-        Interfaces = db.interface.find()
-        for interface in Interfaces:
-            print(interface.ip_address)
-
+        VPCList = TenantController.list_vpcs(db, tenantName)
+        for vpc in VPCList:
+            print(vpc.name + ": ") 
+            VMs = db.vm.find({'vpc_id': vpc._id})
+            for vm in VMs:
+                print(vm.name)
         
-        
-
-
 def vpc():
     display_welcome(title = pyfiglet.figlet_format("- VPC Console -", font="digital"), message="Choose an action to continue:")
     click.secho("1: Create VPC", fg='cyan')
