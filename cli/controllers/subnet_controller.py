@@ -42,6 +42,7 @@ class SubnetController:
             nat_enabled = SubnetType.NAT == subnet.subnet_type
             print(f"Define {network_name}")
             br = nat_enabled or SubnetController.create_bridge(bridge_name)
+            print(br)
             nw = SubnetController.create_network(network_name, bridge_name, cidr, nat_enabled)
             if br and nw:
                 subnet.status = SubnetStatus.RUNNING

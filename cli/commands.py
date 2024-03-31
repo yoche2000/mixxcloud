@@ -113,10 +113,15 @@ class ROUTER_CRUD_Workflows:
 
     @staticmethod
     def run_ansible_playbook_for_router_deletion(vmName):
-        print(f"Router Deletion for {vmName} has been triggered..")
-        command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/destroy-vm.yml", "-e", f"vm_name={vmName}"]
-        Commands.run_command(command)
-        print(f"Router Deletion for {vmName} has been completed..")
+        try:
+            print(f"Router Deletion for {vmName} has been triggered..")
+            command = ["ansible-playbook", "-i", "ansible/hosts", "ansible/destroy-vm.yml", "-e", f"vm_name={vmName}"]
+            Commands.run_command(command)
+            print(f"Router Deletion for {vmName} has been completed..")
+            return True
+        except Exception as error:
+            print(f"Failure in Deletion. More details: {error}")
+            return False
 
 
 

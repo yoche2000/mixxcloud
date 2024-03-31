@@ -86,21 +86,25 @@ def vm():
         vCPU = click.prompt(click.style("Enter vCPU for the VM: ", fg='yellow'), type=int)
         vMem = click.prompt(click.style("Enter vMem for the VM: ", fg='yellow'), type=int)
         disk_size = click.prompt(click.style("Enter disk_size for the VM: ", fg='yellow'), type=str)
-        network = click.prompt(click.style("Enter VPC network name for the VM: ", fg='yellow'), type=str)
+        network = click.prompt(click.style("Enter  subNetwork name for the VM: ", fg='yellow'), type=str)
         subnetId = Subnet.find_by_name(db,network).get_id()
-        vm = VM(vmName,vCPU,vMem,disk_size,vpcId)
-        #vm.json()
-        vm.save(db)
-        vmId = vm.find_by_name(db,vmName).get_id()
-        #VMController.define(db,vmId.get_id())
-        VMController.connect_to_network(db,vpcId,subnetId,vmId,default=True)
+        vm = VM(vmName,vCPU,vMem,disk_size,vpcId).save(db)
+        # vmId = vm.find_by_name(db,vmName).get_id()
+        # VMController.define(db,vmId.get_id())
+        VMController.connect_to_network(db,vpcId,subnetId,vm.get_id(),default=True)
         VMController.start(db, vmId)
         
     elif choice == 2:
         vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
         vmId = VM.find_by_name(db,vmName)
         vpcId = vmId.vpc_id
-        network = click.prompt(click.style("Enter VPC network name you want to add for the VM: ", fg='yellow'), type=str)
+        vpcName = VPC.find_by_id(db, vpcId)
+        subnetList = VPCController.list_subnets(db,vpcName)
+        click.secho(f"Subnets available are:", fg='cyan')
+        for subnet in subnetList:
+            print(subnet.network_name + ": " + subnet.subnet)
+        click.secho(f"Choose to attach the VM to any of the above subnets..", fg='cyan')
+        network = click.prompt(click.style(f"Enter SubNetwork name from the VPC - {vpcId}, you want to add for the VM: ", fg='yellow'), type=str)
         subnetId = Subnet.find_by_name(db,network).get_id()
         VMController.connect_to_network(db,vpcId,subnetId,vmId.get_id())
 
@@ -108,9 +112,33 @@ def vm():
         vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
         vmId = VM.find_by_name(db,vmName)
         vpcId = vmId.vpc_id
-        network = click.prompt(click.style("Enter VPC network name you want to add for the VM: ", fg='yellow'), type=str)
+        network = click.prompt(click.style("Enter SubNetwork name you want to delete for the VM: ", fg='yellow'), type=str)
         subnetId = Subnet.find_by_name(db,network).get_id()
         VMController.disconnect_from_network(db,vmId.get_id(),subnetId)
+
+    elif choice == 4:
+        vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
+        vm = VM.find_by_name(db, vmName)
+        VMController.undefine(db, vm.get_id)
+        vm.delete(db)
+
+    elif choice == 5:
+        vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
+        vm = VM.find_by_name(db, vmName)
+        print(f"Vm Name is: {vm.name}")
+        print(f"CPU of the VM is: {vm.vCPU}")
+        print(f"Memory of the VM is: {vm.vMem}")
+        print(f"Disk Size of the VM is: {vm.disk_size}")
+        vpcId = vm.vpc_id
+        vpcName = VPC.find_by_id(db,vpcId).name
+        print(f"VPC name for which this VM belongs is: {vpcName}")
+        print(f"State of the VM is: {vm.state.name}")
+        Interfaces = vm.interfaces
+        print(f"Subnetworks of the VPC for which this VM is attached are: ")
+        for interface in Interfaces:
+            subnetID = Interface.find_by_id(db,interface).subnet_id
+            networkName = Subnet.find_by_id(db,subnetID).network_name
+            print(networkName)
     else:
         click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
 

@@ -115,6 +115,7 @@ class VMController:
             vm.save(db)
 
             print("Undefine called..")
+
             if vm.isRouterVM:
                 ansible_func = ROUTER_CRUD_Workflows.run_ansible_playbook_for_router_deletion
             else:
@@ -125,7 +126,9 @@ class VMController:
             else:
                 vm.state = VMState.ERROR
                 vm.save(db)
+            print(f"VM State after Undefine. {vm.state}")
             print("Undefine successfull..")
+
         except Exception:
             print("Exception")
             if vm.state != VMState.ERROR:
@@ -186,19 +189,19 @@ class VMController:
         subnet: Subnet = Subnet.find_by_id(db, subnet)
         if isinstance(vm, str):
             vm = ObjectId(vm)
-        vm:VM = VM.find_by_id(db, vm)
+        # vm:VM = VM.find_by_id(db, vm)
         
         # Check if subnet is already connected
-        exists = db.interface.find_one({'subnet_id': subnet.get_id(), 'instance_id': vm.get_id()})
+        exists = db.interface.find_one({'subnet_id': subnet.get_id(), 'instance_id': vm})
         if exists:
             return True
         
         if not subnet:
             raise Exception("Subnet not found")
-        
-        vm_status = vm.state
-        VMController.undefine(db, vpc.routerVM)
-        
+        print("VM is about to be undefined..")
+        vm_status = VM.find_by_id(db, vm).state
+        VMController.undefine(db, vm)
+        print("VM is undefined..")
         subnet_nw = subnet.get_ipobj()
         if ip_address is None:
             sb_nw = subnet_nw.hosts()
@@ -215,26 +218,32 @@ class VMController:
                     else:
                         i = random.randrange(10)
             ip_address = str(ip_address)
-        
+        print(f"IP Address is formulated - {ip_address}")
         mac_address = IPUtils.generate_unique_mac(db)
         network_mask = subnet.get_host_mask()
         gateway = str(subnet_nw[1]) if default else None
-        interface_name = Interface.get_next_interface_name(db, instance_id = vm.get_id(), is_default = default, load_balancing_interface = load_balancing_interface)
-        
+        interface_name = Interface.get_next_interface_name(db, instance_id = vm, is_default = default, load_balancing_interface = load_balancing_interface)
+        print(f"MAC, Network Mask, Gateway, Interface are formulated..")
         lb = None
         if load_balancing_interface:
-            lb = LoadBalancer(load_balancer_name, vpc.get_id(), type=LBType.IAAS.name, lb_instance=vm.get_id(), target_group=[])
+            lb = LoadBalancer(load_balancer_name, vpc.get_id(), type=LBType.IAAS.name, lb_instance=vm, target_group=[])
             lb.save(db)
         
-        net_interface = Interface(ip_address, mac_address, network_mask, gateway, vm.get_id(), subnet.get_id(), interface_name, load_balancer=lb)
+        net_interface = Interface(ip_address, mac_address, network_mask, gateway, vm, subnet.get_id(), interface_name, load_balancer=lb)
         net_interface.save(db)
-        vm.interfaces.append(net_interface.get_id())
-        vm.save(db)
+        
+        vm_real = VM.find_by_id(db, vm)
+        vm_real.interfaces.append(net_interface.get_id())
+        vm_real.save(db)
+        
+        print(f"Interface is saved in DB..")
 
         if vm_status == VMState.RUNNING:
-            VMController.start(db, vpc.routerVM)
+            VMController.start(db, vm)
         elif vm_status == VMState.DEFINED:
-            VMController.define(db, vpc.routerVM)
+            VMController.define(db, vm)
+        # elif vm_status == VMState.UNDEFINED:
+        #     pass
 
         return net_interface
     
