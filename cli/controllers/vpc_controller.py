@@ -1,4 +1,5 @@
-from ipaddress import IPv4Network
+from ipaddress import IPv4Address, IPv4Network
+import random
 from typing import List
 from bson.objectid import ObjectId
 from controllers.subnet_controller import SubnetController
@@ -8,7 +9,7 @@ from models.subnet_model import Subnet
 from models.vm_model import VM, VMState
 from models.interface_model import Interface
 from models.tenant_model import Tenant
-from constants.infra_constants import ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, HOST_NAT_NETWORK
+from constants.infra_constants import HOST_PUBLIC_NETWORK, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, HOST_NAT_NETWORK
 
 import traceback
 
@@ -258,4 +259,22 @@ class VPCController:
             traceback.print_exc()
             return False
         return True
+    
+    @staticmethod
+    def unique_public_ip(db):
+        public_net = Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
+        subnet_nw = public_net.get_ipobj()
+        sb_nw = subnet_nw.hosts()
+
+        used_ips: set[IPv4Address] = {IPv4Address(item['ip_address']) for item in db.interface.find({"subnet_id": public_net.get_id()})}
+        used_ips.add(subnet_nw[1])
+        i = 2
+        while True:
+            ip_address = next(sb_nw, i)
+            if ip_address not in used_ips:
+                break
+            else:
+                i = random.randrange(10)
+        ip_address = str(ip_address)
+        return ip_address
     

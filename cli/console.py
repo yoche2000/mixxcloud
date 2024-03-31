@@ -3,10 +3,14 @@ import shutil
 import pyfiglet
 from controllers.tenant_controller import TenantController
 from controllers.subnet_controller import SubnetController
+from controllers.vm_controller import VMController
 from controllers.vpc_controller import VPCController
 from models.tenant_model import Tenant
 from models.subnet_model import Subnet
 from models.db_model import DB
+from models.vpc_model import VPC
+from models.lb_model import LoadBalancer, LBType
+from models.vm_model import VM
 import traceback
 # sudo apt-get install -y python3-pyfiglet
 # Usage from main.py: sudo python3 main.py
@@ -180,10 +184,160 @@ def vpc():
 
 def loadbalancer():
     display_welcome(title = pyfiglet.figlet_format("- Load Balancer Console -", font="digital"), message="Choose an action to continue:")
+    click.secho("1: List Load Balancers", fg='cyan')
+    click.secho("2: Create Load Balancer", fg='cyan')
+    click.secho("3: Delete Load Balancer", fg='cyan')
+    click.secho("4: Add target to Load Balancer", fg='cyan')
+    click.secho("5: Delete target to Load Balancer", fg='cyan')
+    
+    click.echo()
+    choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
+    
+    if choice == 1:
+        tenant:Tenant = Tenant.find_by_name(db, tenantName)
+        for vpc_id in tenant.vpcs:
+            vpc = VPC.find_by_id(db, vpc_id)
+            click.secho(f"VPC name: {vpc.name}", fg='green')
+            found = False
+            lb_info = db.loadbalancer.find({"vpc_id": vpc_id})
+            for lb_data in lb_info:
+                found = True
+                lb = LoadBalancer.from_dict(lb_data)
+                # lb = LoadBalancer.find_by_id(db, lb_id)
+                click.secho(f"Load balancer name: {lb.name}", fg='cyan')
+                if lb.target_group and len(lb.target_group) == 0:
+                    click.secho(f"No clients to the load balancer", fg='cyan')
+                else:
+                    click.secho(f"---", fg='cyan')
+                    click.secho(f"Target\t\t\tWeight", fg='cyan')
+                    targets_found = False
+                    for target in lb.target_group:
+                        targets_found = True
+                        click.secho(f"{target['ip']}\t\t{target['weight']}", fg='cyan')
+                    if not targets_found:
+                        click.secho(f"No targets found", fg='red')
+                        
+            if not found:
+                click.secho(f"No load balancers found", fg='red')
+                
+    elif choice == 2:
+        click.secho(f"Choose which vpc to add load balancer in", fg='cyan')
+        tenant:Tenant = Tenant.find_by_name(db, tenantName)
+        click.secho(f"VPCs\n--------", fg='cyan')
+        for vpc_id in tenant.vpcs:
+            vpc = VPC.find_by_id(db, vpc_id)
+            click.secho(f"{vpc.name}", fg='cyan')
+        vpc_name = click.prompt(click.style("Choose VPC \U0001F50D", fg='yellow'))
+        vpc = VPC.find_by_name(db, vpc_name)
+
+        if db.loadbalancer.find_one({"vpc_id": vpc.get_id()}):
+            click.secho(f"Load balancer already exists for the vpc", fg='red')
+
+        lb_name = click.prompt(click.style("Choose a name for your load balancer \U0001F50D", fg='yellow'))
+
+        lb_ip = VPCController.unique_public_ip(db)
+        print("Unique Ip", lb_ip)
+        VMController.create_load_balancer(db, vpc, vpc.routerVM, lb_name, lb_ip, LBType.IAAS)
+        VMController.undefine(db, vpc.routerVM)
+        VMController.start(db, vpc.routerVM)
+            
+    elif choice == 3:
+        click.secho(f"Choose which vpc to delete load balancer in", fg='cyan')
+        tenant:Tenant = Tenant.find_by_name(db, tenantName)
+        click.secho(f"VPCs\n--------", fg='cyan')
+        for vpc_id in tenant.vpcs:
+            vpc = VPC.find_by_id(db, vpc_id)
+            click.secho(f"{vpc.name}", fg='cyan')
+        vpc_name = click.prompt(click.style("Choose VPC \U0001F50D", fg='yellow'))
+        vpc = VPC.find_by_name(db, vpc_name)
+        
+        click.secho(f"Available load Balancers", fg='cyan')
+        load_balancers_found = False
+        for lb_data in db.loadbalancer.find({"vpc_id": vpc_id}):
+            load_balancers_found = True
+            lb = LoadBalancer.from_dict(lb_data)
+            click.secho(f"{lb.name}", fg='cyan')
+        if not load_balancers_found:
+            click.secho(f"No load balancers", fg='red')
+            exit()
+            
+        lb_name = click.prompt(click.style("Choose a load balancer \U0001F50D", fg='yellow'))
+
+        VMController.rm_load_balancer(db, vpc, vpc.routerVM, lb_name)
+        VMController.undefine(db, vpc.routerVM)
+        VMController.start(db, vpc.routerVM)
+    elif choice == 4:
+        click.secho(f"Choose which vpc to modify load balancer rules", fg='cyan')
+        tenant:Tenant = Tenant.find_by_name(db, tenantName)
+        click.secho(f"VPCs\n--------", fg='cyan')
+        for vpc_id in tenant.vpcs:
+            vpc = VPC.find_by_id(db, vpc_id)
+            click.secho(f"{vpc.name}", fg='green')
+        vpc_name = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'))
+        vpc = VPC.find_by_name(db, vpc_name)
+        
+        click.secho(f"Available load Balancers", fg='cyan')
+        load_balancers_found = False
+        for lb_data in db.loadbalancer.find({"vpc_id": vpc_id}):
+            load_balancers_found = True
+            lb = LoadBalancer.from_dict(lb_data)
+            click.secho(f"{lb.name}", fg='cyan')
+        if not load_balancers_found:
+            click.secho(f"No load balancers", fg='red')
+            exit()
+            
+        click.secho(f"Choose a load balancer", fg='cyan')
+        lb_name = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'))
+        
+        ip_target = click.prompt(click.style("Set target ip address \U0001F50D", fg='yellow'))
+        # ip_target = ''
+        
+        weight = click.prompt(click.style("Set weight \U0001F50D", fg='yellow'))
+        
+        VMController.add_lb_ip_target(db, vpc.routerVM, lb_name, ip_target, weight)
+        VMController.undefine(db, vpc.routerVM)
+        VMController.start(db, vpc.routerVM)
+    elif choice == 5:
+        click.secho(f"Choose which vpc to modify load balancer rules", fg='cyan')
+        tenant:Tenant = Tenant.find_by_name(db, tenantName)
+        click.secho(f"VPCs\n--------", fg='cyan')
+        for vpc_id in tenant.vpcs:
+            vpc = VPC.find_by_id(db, vpc_id)
+            click.secho(f"{vpc.name}", fg='cyan')
+        vpc_name = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'))
+        vpc = VPC.find_by_name(db, vpc_name)
+        
+        click.secho(f"Available load Balancers", fg='cyan')
+        load_balancers_found = False
+        for lb_data in db.loadbalancer.find({"vpc_id": vpc_id}):
+            load_balancers_found = True
+            lb = LoadBalancer.from_dict(lb_data)
+            click.secho(f"{lb.name}", fg='cyan')
+            
+        # click.secho(f"Choose a load balancer", fg='cyan')
+        lb_name = click.prompt(click.style("Choose a load balancer \U0001F50D", fg='yellow'))
+        if lb.target_group and len(lb.target_group) == 0:
+            click.secho(f"No clients to the load balancer", fg='cyan')
+        else:
+            click.secho(f"---", fg='cyan')
+            click.secho(f"Target\t\t\tWeight", fg='cyan')
+            targets_found = False
+            for target in lb.target_group:
+                targets_found = True
+                click.secho(f"{target['ip']}\t\t{target['weight']}", fg='cyan')
+            if not targets_found:
+                click.secho(f"No targets found", fg='red')
+        
+        # lb_name = click.prompt(click.style("Choose \U0001F50D", fg='yellow'))
+        ip_target = click.prompt(click.style("Choose IP to delete", fg='yellow'))
+        
+        VMController.rm_lb_ip_target(db, vpc.routerVM, lb_name, ip_target)
+        VMController.undefine(db, vpc.routerVM)
+        VMController.start(db, vpc.routerVM)
 
 def console():
     click.echo("----------------------------------------------------")
-    command = click.prompt(click.style("Choose the console - vpc, vm, tenant, exit", fg='yellow'), type=str)
+    command = click.prompt(click.style("Choose the console - vpc, vm, tenant, load-balancer, exit", fg='yellow'), type=str)
     click.echo()
     if command == "vpc":
         vpc()
@@ -191,6 +345,8 @@ def console():
         vm()
     elif command == "tenant":
         tenant()
+    elif command == "load-balancer":
+        loadbalancer()
     elif command == "exit":
         click.secho("Good bye! \U0001F44B \U0001F44B", fg='green')
         exit()
