@@ -95,8 +95,10 @@ class LoadBalancer:
         return None
 
     @staticmethod
-    def find_by_id(db, id):
-        data = db.loadbalancer.find_one({'_id': ObjectId(id)})
+    def find_by_id(db, id: ObjectId | str):
+        if isinstance(id, str):
+            id = ObjectId(id)
+        data = db.loadbalancer.find_one({'_id': id})
         if data:
             return LoadBalancer.from_dict(data)
         return None

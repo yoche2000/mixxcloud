@@ -248,13 +248,12 @@ class VMController:
         return net_interface
     
     @staticmethod
-    def create_load_balancer(db, vpc: VPC | ObjectId,  vm_id: ObjectId | str, lb_name: str, lb_ip: str, lb_type: str):
+    def create_load_balancer(db, vpc: VPC | ObjectId,  vm_id: ObjectId | str, lb_name: str, lb_ip: str, lb_type: LBType):
         try:
             if isinstance(vm_id, str):
                 vm_id = ObjectId(vm_id)
             if isinstance(vpc, ObjectId):
                 vpc = VPC.find_by_id(db, vpc)
-                
                 
             vm = VM.find_by_id(db, vm_id)
             if vm.load_balancer and vm.load_balancer.get(lb_name, None):
@@ -262,7 +261,7 @@ class VMController:
                 return True
             lb = LoadBalancer(lb_name,
                               vpc.get_id(),
-                              type = lb_type,
+                              type = lb_type.name,
                               lb_instance = vm.get_id(),
                               target_group = [],
                               lb_ip = lb_ip,
@@ -322,7 +321,7 @@ class VMController:
         lb_id = vm.load_balancer.get(lb_name, None)
         if lb_id is None:
             raise Exception("Load balancer not found")
-        lb: LoadBalancer = LoadBalancer.find_by_id(lb_id)
+        lb: LoadBalancer = LoadBalancer.find_by_id(db, lb_id)
         lb.rm_ip_address(db, ip_target)
         lb.save(db)
     
