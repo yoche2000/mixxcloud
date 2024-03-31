@@ -15,11 +15,12 @@ class SubnetController:
             if tenant is None:
                 pass
             elif isinstance(tenant, str):
-                tenant = Tenant.find_by_name(db, tenant)
+                tenant_ = Tenant.find_by_name(db, tenant)
+                print(f"Tenant Object: {tenant_}")
             if vpc is None:
                 pass
             elif isinstance(vpc, str):
-                for i in tenant.vpcs:
+                for i in tenant_.vpcs:
                     tmp = VPC.find_by_id(db, i)
                     if tmp.name == vpc:
                         vpc = tmp
@@ -29,7 +30,7 @@ class SubnetController:
                 return True
             if subnet.status == SubnetStatus.STARTING or subnet.status == SubnetStatus.UPDATING:
                 # don't update status since someother action is being performed on this object
-                print("Cannot update at his time")
+                print("Cannot update at this time")
                 return
             if subnet.status == SubnetStatus.ERROR:
                 SubnetController.undefine(db, subnet)
@@ -45,19 +46,22 @@ class SubnetController:
             if br and nw:
                 subnet.status = SubnetStatus.RUNNING
                 subnet.save(db)
+                return True
             else:
                 subnet.status = SubnetStatus.ERROR
                 subnet.save(db)
+                return False
         except Exception as e:
             traceback.print_exc()
             subnet.status = SubnetStatus.ERROR
             subnet.save(db)
+            return False
     
     
     @staticmethod
     def create_bridge(bridgename: str):
         SubnetController.check_is_not_empty(bridgename)
-        os.system("brctl addbr "+bridgename)
+        os.system("sudo brctl addbr "+bridgename)
         os.system("sudo ip link set up "+bridgename)
         t = subprocess.check_output("ip link show "+bridgename, shell=True)
         if not "UP" in str(t):
@@ -93,6 +97,7 @@ class SubnetController:
 
             os.system("sudo virsh net-define "+newpath)
             os.system("sudo virsh net-start "+network_name)
+            print("Network Files are created, defined and started!!")
             return True
         except:
             traceback.print_exc()

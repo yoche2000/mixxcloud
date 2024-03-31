@@ -40,11 +40,12 @@ class Tenant():
     
     def delete(self, db):
         if self._id is not None:
-            for vpc in self.list_vpcs():
-                vpc.delete(db)
+            for vpc in self.vpcs:
+                tmp=VPC.find_by_id(db,vpc)
+                tmp.delete(db)
             db.tenant.delete_one({'_id': self._id})
             self._id = None
-
+    
     def json(self):
         Utils.print_json(self.to_dict())
 
@@ -55,6 +56,7 @@ class Tenant():
     @staticmethod
     def find_by_name(db, name):
         data = db['tenant'].find_one({'name':name})
+        #print("Data",data)
         if data:
             return Tenant.from_dict(data)
         return None

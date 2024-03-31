@@ -69,20 +69,23 @@ def main():
         print(f"Creating {HOST_NAT_NETWORK}")
         infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME, subnet_type = SubnetType.NAT.name).save(db)
     
-    if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
+    """    
+        if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
         print(f"Defining {HOST_NAT_NETWORK}")
         # infra_sb.define_net(db)
         SubnetController.define(db, None, None, infra_sb)
-
+    """
     public_sb =  Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
     if not public_sb:
         print(f"Creating {HOST_PUBLIC_NETWORK}")
         public_sb = Subnet(HOST_PUBLIC_SUBNET, HOST_PUBLIC_NETWORK, HOST_PUBLIC_BR_NAME).save(db)
     
+    """    
     if public_sb.status != SubnetStatus.RUNNING and public_sb.status != SubnetStatus.ERROR:
         print(f"Defining {HOST_PUBLIC_NETWORK}")
         # public_sb.define_net(db)
         SubnetController.define(db, None, None, public_sb)
+    """
 
     """
     # sb = Subnet('192.168.10.0/24', 'L2', 'brl2').save(db)
@@ -99,18 +102,24 @@ def main():
     # infra_sb.delete(db)
     
     
-    TENANT_NAME = 'Delta1'
+    TENANT_NAME = 'A'
     tenant = Tenant.find_by_name(db, TENANT_NAME)
     if not tenant:
         tenant = Tenant(TENANT_NAME).save(db)
     
+    TENANT_NAME = 'B'
+    tenant = Tenant.find_by_name(db, TENANT_NAME)
+    if not tenant:
+        tenant = Tenant(TENANT_NAME).save(db)
+    
+    """
     VPC_NAME = 'VPC7'
     vpc = TenantController.get_vpc_by_tenant_vpc_name(db, tenant, VPC_NAME)
     if not vpc:
         vpc: VPC = TenantController.create_vpc(db, tenant, VPC_NAME, 'east')
-
+    """
     # vpc.
-    VPCController.down(db, tenant, vpc)
+    # VPCController.down(db, tenant, vpc)
 
     # vm = VM.find_by_id(db, vpc.routerVM)
     # vm.state = VMState.ERROR
@@ -124,7 +133,7 @@ def main():
     # customer_subnet = Subnet('10.11.10.0/24', 'CS_NW_1', 'CS_BR_2').save(db)
     # SubnetController.define(db, tenant, vpc, customer_subnet)
 
-    VPCController.create_subnet(db, tenant, vpc, '10.15.15.0/24', 'CS_NW_3', 'CS_BR_3')    
+    # VPCController.create_subnet(db, tenant, vpc, '10.15.15.0/24', 'CS_NW_3', 'CS_BR_3')    
     
     # vm1 = VM('test_vm', 1, 1, '10G').save(db)
 

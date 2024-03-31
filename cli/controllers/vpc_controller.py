@@ -34,6 +34,7 @@ class VPCController:
         except:
             return False
     
+    """
     @staticmethod
     def remove_subnet(db, vpc: VPC | str, subnet: Subnet | ObjectId |str) -> bool:
         try:
@@ -55,6 +56,7 @@ class VPCController:
             return True
         except:
             return False
+    """
         
     @staticmethod
     def list_subnets(db, vpc: VPC | str) -> List[Subnet]:
@@ -64,8 +66,10 @@ class VPCController:
             if not vpc:
                 raise Exception("VPC not found")
             subnets = list(db.subnet.find({'_id': {'$in': vpc.subnets}}))
+            print("Subnets from List_Subnets:", subnets)
             return [Subnet.from_dict(i) for i in subnets]
-        except:
+        except Exception as error:
+            print("Error from List_SubNets:", error)
             return False
         
     # use
@@ -77,6 +81,7 @@ class VPCController:
             if isinstance(vpc, str):
                 vpc = VPC.find_by_name(db, vpc)
             subnets: List[Subnet] = VPCController.list_subnets(db, vpc)
+            print("Returned Subnets for the VPC:",subnets)
             conflict = False
             tmp = Subnet(cidr, network_name, bridge_name)
             cidr: IPv4Network = tmp.get_ipobj()
@@ -109,7 +114,7 @@ class VPCController:
         
     # use
     @staticmethod
-    def remove_subnet(db, vpc: VPC | str, cidr: str) -> bool:
+    def remove_subnet(db, vpc: VPC | str, network_name: str) -> bool:
         try:
             if isinstance(vpc, str):
                 vpc = VPC.find_by_name(db, vpc)
@@ -118,7 +123,7 @@ class VPCController:
             subnets: List[Subnet] = [Subnet.find_by_id(db, subnet_id) for subnet_id in vpc.subnets]
             subnet = None
             for i in subnets:
-                if i.subnet == cidr:
+                if i.network_name == network_name:
                    subnet = i
             
             connected_interfaces = db.interface.find({'subnet_id': subnet})
@@ -135,7 +140,7 @@ class VPCController:
                 vm = VM.find_by_id(db, vm_id)
                 vm.start(db)
             
-            subnet.undefine(db)
+            SubnetController.undefine(db, subnet)
             subnet.delete(db)
             
             vpc.subnets.remove(subnet.get_id())
