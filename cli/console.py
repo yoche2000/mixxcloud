@@ -129,8 +129,7 @@ def vpc():
     click.secho("2: Create and Attach Subnet to VPC", fg='cyan')
     click.secho("3: Delete Subnet to VPC", fg='cyan')
     click.secho("4: Delete VPC", fg='cyan')
-    click.secho("5: List VPCs", fg='cyan')
-    click.secho("8: Main Console", fg='cyan')
+    click.secho("5: Main Console", fg='cyan')
 
     click.echo()
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
@@ -161,6 +160,7 @@ def vpc():
         message = "Subnet Attachment is Successful!! \U00002714\U0000FE0F" if status is not None else "Subnet Attachment is UnSuccessful!! \U000026A0\U0000FE0F" 
         click.secho(message, fg='red')
     elif choice == 3:
+        click.secho(f"This is a destructive operation! Ensure all the VMs are moved to different subnet/deleted..", fg='red')
         vpcName = click.prompt(click.style("Provide the VPC Name where you want to delete the Subnet:", fg='yellow'), type=str)
         vpcName = tenantName+"-"+vpcName
         click.secho(f"VPC ID: {vpcName}", fg='green')
@@ -170,8 +170,9 @@ def vpc():
         status = VPCController.remove_subnet(db, vpcName, subnetName)
         message = "Subnet Deletion is Successful!! \U00002714\U0000FE0F" if status is True else "Subnet Deletion is UnSuccessful!! \U000026A0\U0000FE0F" 
         click.secho(message, fg='red')
-
-    elif choice == 8:
+    elif choice == 4:
+        pass
+    elif choice == 5:
         console()
     else:
         click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
