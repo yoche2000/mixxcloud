@@ -79,36 +79,39 @@ def vm():
     click.secho("3: Detach VM to Subnet", fg='cyan')
     click.secho("4: Delete VM", fg='cyan')
     click.secho("5: VM Info", fg='cyan')
+    click.secho("6: Main Console", fg='cyan')
     # Need to add more options, if required
     click.echo()
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
 
     if choice == 1:
         vpcName = click.prompt(click.style("Enter VPC Name for which you want to create a VM: ", fg='yellow'), type=str)
+        vpcName = tenantName+"-"+vpcName 
         vpcId = VPC.find_by_name(db,vpcName).get_id()
         vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
         vCPU = click.prompt(click.style("Enter vCPU for the VM: ", fg='yellow'), type=int)
         vMem = click.prompt(click.style("Enter vMem for the VM: ", fg='yellow'), type=int)
         disk_size = click.prompt(click.style("Enter disk_size for the VM: ", fg='yellow'), type=str)
-        network = click.prompt(click.style("Enter  subNetwork name for the VM: ", fg='yellow'), type=str)
+        network = click.prompt(click.style("Enter  SubNetwork name for the VM: ", fg='yellow'), type=str)
+        network = vpcName+"-"+network
         subnetId = Subnet.find_by_name(db,network).get_id()
         vm = VM(vmName,vCPU,vMem,disk_size,vpcId).save(db)
         vmId = vm.find_by_name(db,vmName).get_id()
-        #VMController.define(db,vmId.get_id())
         VMController.connect_to_network(db,vpcId,subnetId,vmId,default=True)
         VMController.start(db, vmId)
-        
+    # TODO: Append Logic For VM Name in Attach and Detach
     elif choice == 2:
-        vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
+        vmName = click.prompt(click.style("Enter your VM Name: ", fg='yellow'), type=str)
         vmId = VM.find_by_name(db,vmName)
         vpcId = vmId.vpc_id
-        vpcName = VPC.find_by_id(db, vpcId)
+        vpcName = VPC.find_by_id(db, vpcId).name
         subnetList = VPCController.list_subnets(db,vpcName)
         click.secho(f"Subnets available are:", fg='cyan')
         for subnet in subnetList:
             print(subnet.network_name + ": " + subnet.subnet)
         click.secho(f"Choose to attach the VM to any of the above subnets..", fg='cyan')
-        network = click.prompt(click.style(f"Enter SubNetwork name from the VPC - {vpcId}, you want to add for the VM: ", fg='yellow'), type=str)
+        network = click.prompt(click.style(f"Enter SubNetwork name from the VPC - {vpcName}, you want to add for the VM: ", fg='yellow'), type=str)
+        network = vpcName+"-"+network
         subnetId = Subnet.find_by_name(db,network).get_id()
         VMController.connect_to_network(db,vpcId,subnetId,vmId.get_id())
 
@@ -116,7 +119,9 @@ def vm():
         vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
         vmId = VM.find_by_name(db,vmName)
         vpcId = vmId.vpc_id
-        network = click.prompt(click.style("Enter VPC network name you want to add for the VM: ", fg='yellow'), type=str)
+        vpcName = VPC.find_by_id(db, vpcId).name
+        network = click.prompt(click.style("Enter SubNetwork name you want to delete for the VM: ", fg='yellow'), type=str)
+        network = vpcName+"-"+network
         subnetId = Subnet.find_by_name(db,network).get_id()
         VMController.disconnect_from_network(db,vmId.get_id(),subnetId)
 
@@ -143,16 +148,19 @@ def vm():
             subnetID = Interface.find_by_id(db,interface).subnet_id
             networkName = Subnet.find_by_id(db,subnetID).network_name
             print(networkName)
+    elif choice == 6:
+        console()
     else:
         click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
-
-
+        console()
+    
 def tenant():
     display_welcome(title = pyfiglet.figlet_format("- Tenant Console -", font="digital"), message="Choose an action to continue:")
     click.secho("1: Delete Tenant", fg='cyan')
     click.secho("2: List VPCs", fg='cyan')
     click.secho("3: List Subnets", fg='cyan')
     click.secho("4: List VMs", fg='cyan')
+    click.secho("5: Main Console", fg='cyan')
 
     # Create tenant
     click.echo()
@@ -183,8 +191,14 @@ def tenant():
         for vpc in VPCList:
             print(vpc.name + ": ") 
             VMs = db.vm.find({'vpc_id': vpc._id})
+            print(VMs)
             for vm in VMs:
-                print(vm.name)
+                print(vm)
+    elif choice == 5:
+        console()
+    else:
+        click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
+        console()
 
 
 def vpc():

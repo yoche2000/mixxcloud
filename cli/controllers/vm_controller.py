@@ -332,13 +332,18 @@ class VMController:
         if isinstance(vm_id, str):
             vm_id = ObjectId(vm_id)
         vm = VM.find_by_id(db, vm_id)
+        vm_state = vm.state
         data = db.interface.find_one({'instance_id': vm_id, 'subnet_id': subnet_id})
         if data:
             interface = Interface.from_dict(data)
             vm.interfaces.remove(interface.get_id())
             interface.delete(db)
             vm.save(db)
-            print("Subnet is removed from Interfaces collection..")
+            VMController.undefine(db, vm.get_id())
+            if vm_state == VMState.RUNNING:
+                VMController.start(db, vm.get_id())
+            elif vm_state == VMState.DEFINED:
+                VMController.define(db, vm.get_id())
             
     @staticmethod
     def get_ip_by_vm_name_and_cidr(db, vm_name: str, cidr: str):
