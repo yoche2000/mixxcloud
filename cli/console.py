@@ -191,9 +191,10 @@ def tenant():
         for vpc in VPCList:
             print(vpc.name + ": ") 
             VMs = db.vm.find({'vpc_id': vpc._id})
-            print(VMs)
+            #print(VMs)
             for vm in VMs:
-                print(vm)
+                vmName = VM.find_by_id(db,vm.get_id())
+                print(vmName)
     elif choice == 5:
         console()
     else:
