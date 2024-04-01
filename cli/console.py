@@ -181,19 +181,18 @@ def tenant():
         for vpc in VPCList:
             print(vpc.name)   
     elif choice == 3:
-       vpcName = click.prompt(click.style("Enter the vpc name for which you want to display Subnets ", fg='yellow'), type=str)
-       vpcName= tenantName+"-"+vpcName
-       subnetList = VPCController.list_subnets(db,vpcName)
-       for subnet in subnetList:
-            print(subnet.network_name + ": " + subnet.subnet)
+       VPCList = TenantController.list_vpcs(db, tenantName)
+       for vpc in VPCList:       
+            subnetList = VPCController.list_subnets(db,vpc.name)
+            for subnet in subnetList:
+                print(subnet.network_name + ": " + subnet.subnet)
     elif choice == 4:
         VPCList = TenantController.list_vpcs(db, tenantName)
         for vpc in VPCList:
             print(vpc.name + ": ") 
             VMs = db.vm.find({'vpc_id': vpc._id})
-            #print(VMs)
             for vm in VMs:
-                vmName = VM.find_by_id(db,vm.get_id())
+                vmName = vm['name']
                 print(vmName)
     elif choice == 5:
         console()
@@ -279,6 +278,7 @@ def loadbalancer():
     click.secho("3: Delete Load Balancer", fg='cyan')
     click.secho("4: Add target to Load Balancer", fg='cyan')
     click.secho("5: Delete target to Load Balancer", fg='cyan')
+    click.secho("6: Main Console", fg='cyan')
     
     click.echo()
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
@@ -344,6 +344,7 @@ def loadbalancer():
         click.secho(f"Available load Balancers", fg='cyan')
         load_balancers_found = False
         for lb_data in db.loadbalancer.find({"vpc_id": vpc_id}):
+            print('Hello')
             load_balancers_found = True
             lb = LoadBalancer.from_dict(lb_data)
             click.secho(f"{lb.name}", fg='cyan')
@@ -424,6 +425,11 @@ def loadbalancer():
         VMController.rm_lb_ip_target(db, vpc.routerVM, lb_name, ip_target)
         VMController.undefine(db, vpc.routerVM)
         VMController.start(db, vpc.routerVM)
+    elif choice == 6:
+        console()
+    else:
+        click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
+        console()
 
 def console():
     click.echo("----------------------------------------------------")

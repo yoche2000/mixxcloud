@@ -67,7 +67,7 @@ class VPCController:
             if not vpc:
                 raise Exception("VPC not found")
             subnets = list(db.subnet.find({'_id': {'$in': vpc.subnets}}))
-            print("Subnets from List_Subnets:", subnets)
+            #print("Subnets from List_Subnets:", subnets)
             return [Subnet.from_dict(i) for i in subnets]
         except Exception as error:
             print("Error from List_SubNets:", error)
