@@ -67,7 +67,7 @@ class VMController:
             if vm.load_balancer is not None and len(vm.load_balancer) > 0:
                 out = {}
                 out['network_name'] = HOST_PUBLIC_NETWORK
-                out['iface_name'] = 'ep1'
+                out['iface_name'] = f'enp{len(formatted_interface)+1}s0'
                 lb_key = [i for i in vm.load_balancer.keys()][0]
                 lb:LoadBalancer = LoadBalancer.find_by_id(db, vm.load_balancer[lb_key])
                 out['ipaddress'] = lb.lb_ip + "/" + HOST_PUBLIC_SUBNET.split('/')[1]
@@ -344,6 +344,7 @@ class VMController:
                 VMController.start(db, vm.get_id())
             elif vm_state == VMState.DEFINED:
                 VMController.define(db, vm.get_id())
+            print("Subnet is removed from Interfaces collection..")
             
     @staticmethod
     def get_ip_by_vm_name_and_cidr(db, vm_name: str, cidr: str):

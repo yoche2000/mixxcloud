@@ -71,7 +71,7 @@ def main():
         infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME, subnet_type = SubnetType.NAT.name).save(db)
     
     """    
-        if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
+    if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
         print(f"Defining {HOST_NAT_NETWORK}")
         # infra_sb.define_net(db)
         SubnetController.define(db, None, None, infra_sb)
