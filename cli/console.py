@@ -369,7 +369,7 @@ def loadbalancer():
         
         click.secho(f"Available load Balancers", fg='cyan')
         load_balancers_found = False
-        for lb_data in db.loadbalancer.find({"vpc_id": vpc_id}):
+        for lb_data in db.loadbalancer.find({"vpc_id": vpc._id}):
             load_balancers_found = True
             lb = LoadBalancer.from_dict(lb_data)
             click.secho(f"{lb.name}", fg='cyan')
@@ -400,7 +400,7 @@ def loadbalancer():
         
         click.secho(f"Available load Balancers", fg='cyan')
         load_balancers_found = False
-        for lb_data in db.loadbalancer.find({"vpc_id": vpc_id}):
+        for lb_data in db.loadbalancer.find({"vpc_id": vpc._id}):
             load_balancers_found = True
             lb = LoadBalancer.from_dict(lb_data)
             click.secho(f"{lb.name}", fg='cyan')
