@@ -70,23 +70,22 @@ def main():
         print(f"Creating {HOST_NAT_NETWORK}")
         infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME, subnet_type = SubnetType.NAT.name).save(db)
     
-    """    
-    if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
-        print(f"Defining {HOST_NAT_NETWORK}")
-        # infra_sb.define_net(db)
-        SubnetController.define(db, None, None, infra_sb)
-    """
+    # if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
+    #     print(f"Defining {HOST_NAT_NETWORK}")
+    #     # infra_sb.define_net(db)
+    #     SubnetController.define(db, None, None, infra_sb)
+
     public_sb =  Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
     if not public_sb:
         print(f"Creating {HOST_PUBLIC_NETWORK}")
         public_sb = Subnet(HOST_PUBLIC_SUBNET, HOST_PUBLIC_NETWORK, HOST_PUBLIC_BR_NAME).save(db)
     
-    """    
-    if public_sb.status != SubnetStatus.RUNNING and public_sb.status != SubnetStatus.ERROR:
-        print(f"Defining {HOST_PUBLIC_NETWORK}")
-        # public_sb.define_net(db)
-        SubnetController.define(db, None, None, public_sb)
-    """
+
+    # if public_sb.status != SubnetStatus.RUNNING and public_sb.status != SubnetStatus.ERROR:
+    #     print(f"Defining {HOST_PUBLIC_NETWORK}")
+    #     # public_sb.define_net(db)
+    #     SubnetController.define(db, None, None, public_sb)
+
 
     """
     # sb = Subnet('192.168.10.0/24', 'L2', 'brl2').save(db)
