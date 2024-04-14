@@ -1,0 +1,11 @@
+---
+- name: Test Script
+  hosts: all
+  become: yes
+  tasks:
+    - name: Execute command
+      command: cat /etc/hostname
+      register: cmd_output
+    - name: Debug cmd_output
+      debug:
+        msg: "Output: '{{ cmd_output.stdout }}'"
