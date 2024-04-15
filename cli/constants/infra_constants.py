@@ -1,10 +1,10 @@
-HOST_NAT_NETWORK = "host-nat-network"
+HOST_NAT_NETWORK = "host_pvt_nw"
 HOST_NAT_SUBNET = "172.16.0.0/12"
-HOST_NAT_BR_NAME = 'Tw1'
+HOST_NAT_BR_NAME = 'host_pvt_br'
 
-HOST_PUBLIC_NETWORK = "host-public-network"
+HOST_PUBLIC_NETWORK = "host_pub_nw"
 HOST_PUBLIC_SUBNET = "10.10.10.0/24"
-HOST_PUBLIC_BR_NAME = "Tw2"
+HOST_PUBLIC_BR_NAME = "host_pub_br"
 
 ROUTER_VM_VCPU = 2
 ROUTER_VM_MEM = 2048
