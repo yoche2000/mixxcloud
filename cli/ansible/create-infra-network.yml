@@ -1,0 +1,61 @@
+---
+- name: Test Script
+  hosts: all
+  become: yes
+  vars_files:
+    - vars/infra-vars.yml
+  tasks:
+    - name: Create bridges
+      command: brctl addbr {{ item['br_name'] }}
+      loop: "{{ infra[group_names[0]] }}"
+    
+    - name: Create temp folder
+      command: mkdir -p /tmp/ln
+    
+    - name: Create virsh network file
+      template:
+        src: bridge.j2
+        dest: "/tmp/ln/{{ item['br_name'] }}-network.xml"
+      loop: "{{ infra[group_names[0]] }}"
+    
+    - name: Create virsh networks
+      command: virsh net-define /tmp/ln/{{ item['br_name'] }}-network.xml
+      loop: "{{ infra[group_names[0]] }}"
+    
+    - name: Remove virsh network file
+      command: rm /tmp/ln/{{ item['br_name'] }}-network.xml
+      loop: "{{ infra[group_names[0]] }}"
+    
+    - name: Set bridge to up
+      command: ip link set {{ item['br_name'] }} up
+      loop: "{{ infra[group_names[0]] }}"
+    
+    - name: Give ip to bridge
+      command: ip link set {{ item['local'] }} dev {{ item['br_name'] }}
+      loop: "{{ infra[group_names[0]] }}"
+
+    - name: Start virsh network
+      command: virsh net-start {{ item['nw_name'] }}
+      loop: "{{ infra[group_names[0]] }}"
+
+    - name: Create VxLAN interface
+      command: ip link add {{ item['name'] }} type vxlan id {{ item['vni_id'] }} local {{ item['local'] }} remote {{ item['remote'] }}
+      loop: "{{ infra[group_names[0]] }}"
+      # command: echo "ip link add {{ item['name'] }} type vxlan id {{ item['vni_id'] }} local {{ item['local'] }} remote {{ item['remote'] }}"
+      # register: cmd_output
+    
+    - name: Set VxLAN interface to up
+      command: ip link set up {{ item['name'] }}
+      loop: "{{ infra[group_names[0]] }}"
+    
+    - name: Add VxLAN interface to bridge
+      command: brctl addif {{ item['br_name'] }} {{ item['name'] }}
+      loop: "{{ infra[group_names[0]] }}"
+    
+    - name: Add VxLAN interface to bridge
+      command: bridge fdb append 00:00:00:00:00:00 dev {{ item['name'] }} dst {{ item['remote'] }}
+      loop: "{{ infra[group_names[0]] }}"
+    
+    # - name: debug
+    #   debug:
+    #     msg: "{{cmd_output}}"

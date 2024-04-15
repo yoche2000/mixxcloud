@@ -1,0 +1,31 @@
+infra:
+  odd:
+    - type: public
+      name: VX-Pub
+      local: 10.10.10.1
+      remote: 10.10.10.2
+      vni_id: 2
+      br_name: host-pub-br
+      nw_name: host-pub-nw
+    - type: private
+      name: VX-Main
+      local: 172.16.0.1
+      remote: 172.16.0.2
+      vni_id: 1
+      br_name: host-pvt-br
+      nw_name: host-pvt-nw
+  even:
+    - type: public
+      name: VX-Pub
+      local: 10.10.10.2
+      remote: 10.10.10.1
+      vni_id: 2
+      br_name: host-pub-br
+      nw_name: host-pub-nw
+    - type: private
+      name: VX-Main
+      local: 172.16.0.2
+      remote: 172.16.0.1
+      vni_id: 1
+      br_name: host-pvt-br
+      nw_name: host-pvt-nw
