@@ -1,4 +1,3 @@
 {% for ip, weight in tenantIps.items() %}
-
-/sbin/iptables -A PREROUTING -t nat -p tcp -d {{ iface.ipaddress.split('/')[0] }} --dport 8080 -m statistic --mode random --probability {{ weight }} -j DNAT --to-destination {{ ip }}:80
+/sbin/iptables -A PREROUTING -t nat -p tcp -d {{ lb_ip }} --dport 8080 -m statistic --mode random --probability {{ weight }} -j DNAT --to-destination {{ ip }}:80
 {% endfor %}

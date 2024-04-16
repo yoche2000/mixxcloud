@@ -1,2 +1,2 @@
-container_name: C1
+container_name: C2
 container_image: vpcrouter

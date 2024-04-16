@@ -1,10 +1,17 @@
 ---
-- name: Create LB container
-  hosts: localhost
+- name: Create LB rules
+  hosts: all
   become: yes
   vars_files:
     - vars/lb-vars.yml
     
   tasks:
-    name: list
-    command: sudo ls
+    - name: generate lb rules
+      template:
+        src: lb_rules.j2
+        dest: "/home/vmadm/mixxcloud/cli/Container_automation/ansible/{{ container_name }}_rules.sh"
+      become: yes
+    
+    - name: add rules to the LB container
+      command: "ip netns exec {{ container_name }} bash {{ playbook_dir }}/{{ container_name }}_rules.sh"
+      become: yes

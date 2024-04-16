@@ -26,8 +26,8 @@
       command: "ip link set up {{ container_name+bridge_name }}inf1"
       become: yes
          
-    #Bring the namespace bridge interface up
-    - name: bringing namespace bridge interface up
+    #Bring the namespace  interface up
+    - name: bringing namespace interface up
       command: "ip netns exec {{ container_name }} ip link set up {{ container_name+bridge_name }}inf"
       become: yes
 
