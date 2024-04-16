@@ -1,0 +1,55 @@
+---
+- name: Create veth between container
+  hosts: all
+  become: yes
+  vars_files:
+    - vars/veth-vars.yml
+  
+  tasks:
+    #create veth pair between these two bridges
+    - name: create veth pair
+      command: "ip link add {{ container_name+bridge_name }}inf type veth peer name {{ container_name+bridge_name }}inf1"
+      become: yes
+
+    #Assign it to namespace
+    - name: assign on end to namespace
+      command: "ip link set {{ container_name+bridge_name }}inf netns {{ container_name }}"  
+      become: yes
+
+    #Assign other to host bridge
+    - name: assign other end to host bridge
+      command: "brctl addif {{ bridge_name }} {{ container_name+bridge_name }}inf1"
+      become: yes
+    
+    #Bring the host bridge interface up
+    - name: bringing host bridge interface up
+      command: "ip link set up {{ container_name+bridge_name }}inf1"
+      become: yes
+         
+    #Bring the namespace bridge interface up
+    - name: bringing namespace bridge interface up
+      command: "ip netns exec {{ container_name }} ip link set up {{ container_name+bridge_name }}inf"
+      become: yes
+
+    #Assign IP
+    - name: assign ip to the veth end in container 
+      command: "ip netns exec {{ container_name }} ip addr add {{ ip_address }} dev {{ container_name+bridge_name }}inf"
+      become: yes
+    
+    #Add gateway for vpc router
+    - name: add default route
+      command: "ip netns exec {{ container_name }} ip route add default via {{ gateway_vpc }} dev {{ container_name+bridge_name }}inf"
+      become: yes
+      when: gateway_vpc is defined
+
+    #Add gateway for lb 
+    - name: add default route
+      command: "ip netns exec {{ container_name }} ip route add default via {{ gateway_lb }} dev {{ container_name+bridge_name }}inf"
+      become: yes
+      when: gateway_lb is defined
+
+    #source NAT
+    - name: adding NAT rule for SNAT
+      command: "ip netns exec {{ container_name }} iptables -t nat -A POSTROUTING -o {{ container_name+bridge_name }}inf -j MASQUERADE"
+      become: yes
+      when: gateway_vpc is defined

@@ -1,0 +1,22 @@
+# veth betweeb vpc and pvt
+container_name: C1
+bridge_name: pvt
+ip_address: 172.16.1.3/12
+gateway_vpc: 172.16.0.1
+
+# veth betweeb vpc and pub
+#container_name: hcvpc
+#bridge_name: pub
+#ip_address: 10.10.10.6/24
+
+# veth betweeb lb and subnet
+#container_name: lb
+#bridge_name: C1S1
+#ip_address: 10.10.0.6/24
+#gateway_lb: 10.10.0.1
+
+# veth betweeb lb and pub
+#container_name: lb
+#bridge_name: pub
+#ip_address: 10.10.10.4/24
+

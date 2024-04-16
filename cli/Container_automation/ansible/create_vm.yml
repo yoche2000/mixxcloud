@@ -1,0 +1,79 @@
+---
+- name: Create Guest VMs
+  hosts: all
+  become: yes
+  vars_files:
+    - vm-vars.yml
+  
+  tasks:
+    # Create subdirectories for images
+    - name: Create sub-directory
+      file:
+        path: "/var/lib/libvirt/images/{{ item.vm_name }}"
+        state: directory
+      with_items: "{{ vms }}"
+      become: yes
+    
+    # Create disk images
+    - name: Create QCOW2 disk image with backing file
+      command: qemu-img create -f qcow2 -F qcow2 -o backing_file=/var/lib/libvirt/images/jammy-server-cloudimg-amd64.img "./{{ item.vm_name }}.qcow2"
+      args:
+        chdir: "/var/lib/libvirt/images/{{ item.vm_name }}"
+      with_items: "{{ vms }}"
+      become: yes
+
+    # Resize disk
+    - name: Resize disk size to 12GB
+      command: qemu-img resize "/var/lib/libvirt/images/{{ item.vm_name }}/{{ item.vm_name }}".qcow2 12G
+      with_items: "{{ vms }}"
+      become: yes
+    
+    # Create meta-data file
+    - name: Create meta data files
+      template:
+        src: meta-data.j2
+        dest: "/var/lib/libvirt/images/{{ item.vm_name }}/meta-data"
+      with_items: "{{ vms }}"
+      become: yes
+
+    # Create user-data file
+    - name: Create user data files
+      template:
+        src: user-data.j2
+        dest: "/var/lib/libvirt/images/{{ item.vm_name }}/user-data"
+      with_items: "{{ vms }}"
+      become: yes
+    
+    # Create network-config file
+    - name: Create network-config files
+      template:
+        src: network.j2
+        dest: "/var/lib/libvirt/images/{{ item.vm_name }}/network-config"
+      with_items: "{{ vms }}"
+      become: yes
+
+    # Create ISO disk image
+    - name: Creating ISO disk image
+      command: >
+        cloud-localds -v  "{{ item.vm_name }}-seed.qcow2" user-data meta-data --network-config=network-config
+      args:
+        chdir: "/var/lib/libvirt/images/{{ item.vm_name }}"
+      with_items: "{{ vms }}"
+      become: yes
+    
+    #Define VM
+    - name: Define VM
+      virt:
+        name: "{{ item.vm_name }}"
+        command: define
+        xml: "{{ lookup('template', 'templates/VM_template.xml.j2') }}"
+      with_items: "{{ vms }}"
+      become: yes
+
+    # Create and start new vm
+    - name: Start vm
+      virt:
+        name: "{{ item.vm_name }}"
+        command: create
+      with_items: "{{ vms }}"
+      become: yes

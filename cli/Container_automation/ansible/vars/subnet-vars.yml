@@ -1,0 +1,7 @@
+container_name: C1
+subnet_name: S1
+subnet: 10.1.1.0/24
+gateway: 10.1.1.2/24
+vni_id: 10
+local_ip: 172.16.1.3
+remote_ip: 172.16.1.2

@@ -1,0 +1,19 @@
+---
+- name: Create containers
+  hosts: all
+  become: yes
+  vars_files:
+    - vars/container-vars.yml
+
+  tasks:
+    #create container
+    - name: create container
+      command: "docker run -d --name {{ container_name }} -h {{ container_name }} {{ container_image }}"
+      become: yes
+      
+    #link namespace
+    - name: Execute docker to namespace
+      script: docker_to_netnsh.sh {{ container_name }}
+      args:
+        executable: /bin/bash
+      become: yes

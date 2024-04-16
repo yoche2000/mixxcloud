@@ -1,0 +1,106 @@
+---
+- name: Create LB container
+  hosts: localhost
+  become: yes
+  vars:
+    container_name: LB
+    ip_address: 192.168.64.2/20
+    gateway: 192.168.64.1
+    vpc_name: C1
+    subnet_name: S1
+    subnet_ip_LB: 10.10.1.5/24
+    tenantIps : {
+            "10.10.1.2": "0.33", 
+            "10.10.1.3": "0.5", 
+            "10.10.2.4": "1"
+        }
+
+  tasks:
+    #create a folder for container
+    - name: create a folder
+      file:
+        path: "/home/vmadm/containers/{{ container_name }}"
+        state: directory
+      become: yes
+
+    #create container
+    - name: create container
+      command: "docker run -d --name {{ container_name }} -h {{ container_name }} vpcrouter"
+      become: yes
+      
+    #link namespace
+    - name: Execute docker to namespace
+      script: docker_to_netnsh.sh {{ container_name }}
+      args:
+        executable: /bin/bash
+      become: yes
+
+    #create veth pair between these two bridges
+    - name: create veth pair
+      command: "ip link add {{ container_name }}inf type veth peer name {{ container_name }}inf1"
+      become: yes
+
+    #Assign it to namespace
+    - name: assign on end to namespace
+      command: "ip link set {{ container_name }}inf netns {{ container_name }}"  
+      become: yes
+
+    #Assign other to host bridge
+    - name: assign other end to host bridge
+      command: "brctl addif Tw2 {{ container_name }}inf1"
+      become: yes
+    
+    #Bring the host bridge interface up
+    - name: bringing host bridge interface up
+      command: "ip link set up {{ container_name }}inf1"
+      become: yes
+         
+    #Bring the namespace bridge interface up
+    - name: bringing namespace bridge interface up
+      command: "ip netns exec {{ container_name }} ip link set up {{ container_name }}inf"
+      become: yes
+
+    #Assign IP
+    - name: assign ip to the container router
+      command: "ip netns exec {{ container_name }} ip addr add {{ ip_address }} dev {{ container_name }}inf"
+      become: yes
+    
+    #Add gateway
+    - name: add default route
+      command: "ip netns exec {{ container_name }} ip route add default via {{ gateway }} dev {{ container_name }}inf"
+      become: yes
+
+    #source NAT
+    - name: adding NAT rule for SNAT
+      command: "ip netns exec {{ container_name }} iptables -t nat -A POSTROUTING -o {{ container_name }}inf -j MASQUERADE"
+      become: yes
+    
+    #create veth pair between loadbalancer and subnet
+    - name: create veth pair
+      command: "ip link add {{ container_name+subnet_name }}inf type veth peer name {{ container_name+subnet_name }}inf1"
+      become: yes
+
+    #Assign it to namespace
+    - name: assign one end to namespace
+      command: "ip link set {{ container_name+subnet_name }}inf1 netns {{ container_name }}"  
+      become: yes
+    
+    #Assign other to host bridge
+    - name: assign other end to host bridge
+      command: "brctl addif {{ vpc_name+subnet_name }} {{ container_name+subnet_name }}inf"
+      become: yes
+    
+    #Bring the host bridge interface up
+    - name: bringing host bridge interface up
+      command: "ip link set up {{ container_name+subnet_name }}inf"
+      become: yes
+         
+    #Bring the namespace interface up
+    - name: bringing namespace interface up
+      command: "ip netns exec {{ container_name }} ip link set up {{ container_name+subnet_name }}inf1"
+      become: yes
+    
+    #Assign IP to LB veth interface
+    - name: assign IP to LB veth interface
+      command: "ip netns exec {{ container_name }} ip addr add {{ subnet_ip_LB }} dev {{ container_name+subnet_name }}inf1"
+      become: yes

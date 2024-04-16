@@ -1,0 +1,106 @@
+---
+- name: Create subnet inside container
+  hosts: all
+  become: yes
+  vars_files:
+    - vars/subnet-vars.yml
+  
+  tasks:
+    #create bridge in namespace
+    - name: create bridge in namespace
+      command: "ip netns exec {{ container_name }} ip link add  {{ container_name+subnet_name }} type bridge"
+      become: yes
+      
+    #Assign IP to bridge to be as gateway
+    - name: Assign IP to bridge
+      command: "ip netns exec {{ container_name }} ip addr add {{ gateway }} dev {{ container_name+subnet_name }}"
+      become: yes
+      
+    #create bridge in Host
+    - name: create bridge in host for VMs to connect to
+      command: "brctl addbr {{ container_name+subnet_name }}"
+      become: yes
+      ignore_errors: true
+
+    #create veth pair between these two bridges
+    - name: create veth pair
+      command: "ip link add {{ container_name+subnet_name }}inf type veth peer name {{ container_name+subnet_name }}inf1"
+      become: yes
+
+    #Assign it to namespace
+    - name: assign on end to namespace
+      command: "ip link set {{ container_name+subnet_name }}inf1 netns {{ container_name }}"  
+      become: yes
+
+    #Assign it to namespace bridge
+    - name: assign to namespace bridge
+      command: "ip netns exec {{ container_name }} brctl addif {{ container_name+subnet_name }} {{ container_name+subnet_name }}inf1 "
+      become: yes
+    
+    #Assign other to host bridge
+    - name: assign other end to host bridge
+      command: "brctl addif {{ container_name+subnet_name }} {{ container_name+subnet_name }}inf"
+      become: yes
+    
+    #Bring the host bridge up
+    - name: bringing the host bridge
+      command: "ip link set up {{ container_name+subnet_name }}"
+      become: yes
+    
+    #Bring the namespace bridge up
+    - name: bringing the namespace bridge
+      command: "ip netns exec {{ container_name }} ip link set up {{ container_name+subnet_name }}"
+      become: yes
+    
+    #Bring the host bridge interface up
+    - name: bringing host bridge interface up
+      command: "ip link set up {{ container_name+subnet_name }}inf"
+      become: yes
+         
+    #Bring the namespace bridge interface up
+    - name: bringing namespace bridge interface up
+      command: "ip netns exec {{ container_name }} ip link set up {{ container_name+subnet_name }}inf1"
+      become: yes
+
+    #add vxlan
+    - name: add vxlan
+      command: "ip netns exec {{ container_name }} ip link add vxlan{{ vni_id }} type vxlan id {{ vni_id }} local {{ local_ip }} remote {{ remote_ip }} dstport 4789"
+      become: yes
+
+    #add vxlan interface to bridge
+    - name: add vxlan interface to bridge
+      command: "ip netns exec {{ container_name }} brctl addif {{ container_name+subnet_name }} vxlan{{ vni_id }}"
+      become: yes 
+    
+    #bring the vxlan interface up
+    - name: bring the vxlan interface up
+      command: "ip netns exec {{ container_name }} ip link set up vxlan{{ vni_id }}"
+      become: yes
+
+    #mac rules to send bum packets
+    - name: adding mac rules to send bum packets
+      command: "ip netns exec {{ container_name }} bridge fdb append 00:00:00:00:00:00 dev vxlan{{ vni_id }} dst {{ remote_ip }}"
+      become: yes
+
+    #adding accept policy rules
+    - name: accept policy rule
+      command: "iptables -A FORWARD -i {{ container_name+subnet_name }} -o {{ container_name }}inf -j ACCEPT"
+      become: yes
+    
+    #adding accept policy state related rules
+    - name: accept policy rule
+      command: "iptables -A FORWARD -i {{ container_name }}inf -o {{ container_name+subnet_name }} -m state --state RELATED,ESTABLISHED -j ACCEPT"
+      become: yes
+    
+    #create network using this bridge
+    - name: Define Virtual Network
+      virt_net:
+        command: define
+        name: "{{ container_name+subnet_name }}"
+        xml: '{{ lookup("template", "templates/network_template.xml.j2") }}'
+      become: yes
+
+    # Create and start a network
+    - name: Start Virtual Network
+      command: virsh net-start "{{ container_name+subnet_name }}"
+      become: yes

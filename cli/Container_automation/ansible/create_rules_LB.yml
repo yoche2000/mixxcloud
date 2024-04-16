@@ -1,0 +1,10 @@
+---
+- name: Create LB container
+  hosts: localhost
+  become: yes
+  vars_files:
+    - vars/lb-vars.yml
+    
+  tasks:
+    name: list
+    command: sudo ls

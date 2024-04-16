@@ -1,0 +1,14 @@
+#create dnsmasq for the subnet
+    - name: create dnsmasq
+      template:
+        src: subnet_dnsmasq.conf.j2
+        dest: "/home/vmadm/containers/{{ container_name }}/{{ container_name+subnet_name}}_dnsmasq.conf"
+      become: yes
+
+    #start dnsmasq
+    - name: start dnsmasq
+      shell:
+        cmd: |
+          "docker cp /home/vmadm/containers/{{ container_name }}/{{ container_name+subnet_name}}_dnsmasq.conf {{ container_name }}:/etc/{{ container_name+subnet_name }}_dnsmasq.conf"
+          "docker exec -it {{ container_name }} /usr/sbin/dnsmasq --conf-file=/etc/{{ container_name+subnet_name }}_dnsmasq.conf"
+      become: yes
