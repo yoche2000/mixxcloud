@@ -1,31 +1,39 @@
 infra:
   odd:
     - type: public
-      name: VX-Pub
-      local: 10.10.10.1
-      remote: 10.10.10.2
+      name: VXPUB
+      local: 10.10.10.1/24
+      remote: 10.10.10.2/24
       vni_id: 2
-      br_name: host-pub-br
-      nw_name: host-pub-nw
+      br_name: pub
+      nw_name: pubnw
+      remote_local: 192.168.38.17
+      remote_remote: 192.168.38.16
     - type: private
-      name: VX-Main
-      local: 172.16.0.1
-      remote: 172.16.0.2
+      name: VXMAIN
+      local: 172.16.0.1/12
+      remote: 172.16.0.2/12
       vni_id: 1
-      br_name: host-pvt-br
-      nw_name: host-pvt-nw
+      br_name: pvt
+      nw_name: pvtnw
+      remote_local: 192.168.38.17
+      remote_remote: 192.168.38.16
   even:
     - type: public
-      name: VX-Pub
-      local: 10.10.10.2
-      remote: 10.10.10.1
+      name: VXPUB
+      local: 10.10.10.2/24
+      remote: 10.10.10.1/24
       vni_id: 2
-      br_name: host-pub-br
-      nw_name: host-pub-nw
+      br_name: pub
+      nw_name: pubnw
+      remote_local: 192.168.38.16
+      remote_remote: 192.168.38.17
     - type: private
-      name: VX-Main
-      local: 172.16.0.2
-      remote: 172.16.0.1
+      name: VXMAIN
+      local: 172.16.0.2/12
+      remote: 172.16.0.1/12
       vni_id: 1
-      br_name: host-pvt-br
-      nw_name: host-pvt-nw
+      br_name: pvt
+      nw_name: pvtnw
+      remote_local: 192.168.38.16
+      remote_remote: 192.168.38.17

@@ -1,5 +1,5 @@
 ---
-- name: Test Script
+- name: Create infrastructure
   hosts: all
   become: yes
   vars_files:
@@ -27,11 +27,11 @@
       loop: "{{ infra[group_names[0]] }}"
     
     - name: Set bridge to up
-      command: ip link set {{ item['br_name'] }} up
+      command: ip link set up dev {{ item['br_name'] }}
       loop: "{{ infra[group_names[0]] }}"
     
     - name: Give ip to bridge
-      command: ip link set {{ item['local'] }} dev {{ item['br_name'] }}
+      command: ip addr add {{ item['local'] }} dev {{ item['br_name'] }}
       loop: "{{ infra[group_names[0]] }}"
 
     - name: Start virsh network
@@ -39,13 +39,13 @@
       loop: "{{ infra[group_names[0]] }}"
 
     - name: Create VxLAN interface
-      command: ip link add {{ item['name'] }} type vxlan id {{ item['vni_id'] }} local {{ item['local'] }} remote {{ item['remote'] }}
+      command: ip link add {{ item['name'] }} type vxlan id {{ item['vni_id'] }} local {{ item['remote_local'] }} remote {{ item['remote_remote'] }}
       loop: "{{ infra[group_names[0]] }}"
       # command: echo "ip link add {{ item['name'] }} type vxlan id {{ item['vni_id'] }} local {{ item['local'] }} remote {{ item['remote'] }}"
       # register: cmd_output
     
     - name: Set VxLAN interface to up
-      command: ip link set up {{ item['name'] }}
+      command: ip link set up dev {{ item['name'] }}
       loop: "{{ infra[group_names[0]] }}"
     
     - name: Add VxLAN interface to bridge

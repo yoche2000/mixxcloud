@@ -1,0 +1,28 @@
+---
+- name: Destroy infrastructure
+  hosts: all
+  become: yes
+  vars_files:
+    - vars/infra-vars.yml
+  tasks:
+    - name: Set bridge to down
+      command: ip link set {{ item['br_name'] }} down
+      loop: "{{ infra[group_names[0]] }}"
+    
+    - name: Delete VxLAN interface
+      command: ip link delete {{ item['name'] }}
+      loop: "{{ infra[group_names[0]] }}"
+
+    - name: Delete bridges
+      command: brctl delbr {{ item['br_name'] }}
+      loop: "{{ infra[group_names[0]] }}"
+  
+    - name: Destroy virsh network
+      community.libvirt.virt_net:
+        command: destory
+        name: "{{ item['nw_name'] }}"
+
+    - name: Undefine virsh network
+      community.libvirt.virt_net:
+        command: undefine
+        name: "{{ item['nw_name'] }}"
