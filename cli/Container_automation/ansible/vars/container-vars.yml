@@ -1,2 +1,4 @@
-container_name: C2
+container_name: KVPC
 container_image: vpcrouter
+vcpu: 2
+mem: 2048m

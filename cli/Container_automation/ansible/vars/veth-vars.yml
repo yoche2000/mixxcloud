@@ -10,13 +10,19 @@
 
 
 # veth betweeb lb and subnet
-container_name: C2
-bridge_name: C2S1
-ip_address: 10.1.1.7/24
-gateway_lb: 10.1.1.1
+#container_name: C2
+#bridge_name: C2S1
+#ip_address: 10.1.1.7/24
+#gateway_lb: 10.1.1.1
 
 # veth betweeb lb and pub
 #container_name: lb
 #bridge_name: pub
+
+# veth betweeb vminstance and subnet
+# container_name: C2VM1
+#bridge_name: C2S1
+#ip_address: 10.1.1.8/24
+#gateway_lb: 10.1.1.1
 
 

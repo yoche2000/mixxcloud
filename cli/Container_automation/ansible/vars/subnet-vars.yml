@@ -1,7 +1,7 @@
-container_name: C2
-subnet_name: S1
-subnet: 10.1.1.0/24
-gateway: 10.1.1.1/24
+container_name: KVPC
+subnet_name: KS1
+subnet: 10.2.2.0/24
+gateway: 10.2.2.1/24
 vni_id: 10
-local_ip: 172.16.1.7
-remote_ip: 172.16.1.6
+local_ip: 172.16.1.30
+remote_ip: 172.16.1.31

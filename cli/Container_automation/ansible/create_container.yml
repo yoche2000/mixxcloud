@@ -6,11 +6,17 @@
     - vars/container-vars.yml
 
   tasks:
-    #create container
-    - name: create container
+    #create vpc container
+    - name: Create VPC/LoadBalancer Container
       command: "docker run -d --name {{ container_name }} -h {{ container_name }} {{ container_image }}"
       become: yes
-      
+      when: vcpu is not defined and mem is not defined
+
+    - name: Create VM Container
+      command: "docker run -d --name {{ container_name }} -h {{ container_name }} -m {{ mem }} --cpus {{ vcpu }} {{ container_image }}"
+      become: yes
+      when: vcpu is defined and mem is defined
+
     #link namespace
     - name: Execute docker to namespace
       script: docker_to_netnsh.sh {{ container_name }}
