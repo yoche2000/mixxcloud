@@ -2,7 +2,7 @@ import subprocess
 import json
 from vmUtils import VMConfiguration
 from southbound_utils import Commands
-from routerUtils import RouterConfiguration
+from routerUtils import RouterConfiguration, ContainerConfiguration
 import traceback
 
 class VM_CRUD_Workflows:
@@ -123,7 +123,56 @@ class ROUTER_CRUD_Workflows:
             print(f"Failure in Deletion. More details: {error}")
             return False
 
+class Subnet_CRUD_Workflows:
+    @staticmethod
+    def run_ansible_playbook_for_subnet_creation(vpc_name, subnet_name, subnet, gateway, vni_id, local_ip, remote_ip):
+        pass
+    
+    @staticmethod
+    def run_ansible_playbook_for_subnet_deletion(nw_name, br_name):
+        pass
 
+
+class Container_CRUD_Workflows:
+    @staticmethod
+    def run_ansible_playbook_for_container_creation(container_name, container_image):
+        try:
+            print(f"Container Creation for {container_name} has been triggered..")
+            ContainerConfiguration.createContainerVarsFile(container_name, container_image)
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_container.yml",  '-l', 'odd']
+            Commands.run_command(command)
+            print(f"Container Creation for {container_name} has been completed..")
+            return True
+        except Exception as error:
+            print(f"Failure in Container Creation. More details: {error}")
+            return False
+        
+    @staticmethod
+    def run_ansible_playbook_for_container_subnet_addition(container_name, bridge_name, ip_address, gateway_lb):
+        try:
+            print(f"Container Subnet Creation for {container_name} has been triggered..")
+            ContainerConfiguration.createContainerConnectSubnetVarsFile(container_name, bridge_name, ip_address, gateway_vpc, gateway_lb)
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_veth_container_bridge.yml",  '-l', 'odd']
+            Commands.run_command(command)
+            print(f"Container Subnet Creation for {container_name} has been completed..")
+            return True
+        except Exception as error:
+            print(f"Failure in Container Subnet Creation. More details: {error}")
+            return False
+        
+    @staticmethod
+    def run_ansible_playbook_for_container_subnet_creation(container_name, bridge_name, ip_address, gateway_lb):
+        try:
+            print(f"Container Subnet Creation for {container_name} has been triggered..")
+            ContainerConfiguration.createContainerSubnetVarsFile(container_name, bridge_name, ip_address, gateway_lb)
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_subnet.yml",  '-l', 'odd']
+            Commands.run_command(command)
+            print(f"Container Subnet Creation for {container_name} has been completed..")
+            return True
+        except Exception as error:
+            print(f"Failure in Container Subnet Creation. More details: {error}")
+            return False
+        
 
 # Testing:
 """

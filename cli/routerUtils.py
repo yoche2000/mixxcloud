@@ -59,6 +59,41 @@ class RouterConfiguration:
     # def createLoadBalancerRulesFile():
 
 
+class ContainerConfiguration:
+    @staticmethod
+    def createContainerVarsFile(container_name, container_image):
+        data = {
+            "container_name": container_name,
+            "container_image": container_image
+        }
+        file_path = 'Container_automation/ansible/vars/container-vars.yml'
+        with open(file_path, 'w') as file:
+            yaml.dump(data, file, sort_keys=False)
+    
+    @staticmethod
+    def createContainerConnectSubnetVarsFile(container_name, bridge_name, ip_address, gateway_vpc, gateway_lb):
+        data = {
+            "container_name": container_name,
+            "bridge_name": bridge_name,
+            "ip_address": ip_address,
+            "gateway_vpc": gateway_vpc,
+            "gateway_lb": gateway_lb
+        }
+        file_path = 'Container_automation/ansible/vars/veth-vars.yml'
+        with open(file_path, 'w') as file:
+            yaml.dump(data, file, sort_keys=False)
+
+    @staticmethod
+    def createContainerSubnetVarsFile(container_name, bridge_name, ip_address, gateway_lb):
+        data = {
+            "container_name": container_name,
+            "bridge_name": bridge_name,
+            "ip_address": ip_address,
+            "gateway_lb": gateway_lb
+        }
+        file_path = 'Container_automation/ansible/vars/subnet-vars.yml'
+        with open(file_path, 'w') as file:
+            yaml.dump(data, file, sort_keys=False)
 # Test Case:
 """
 vm_name = "RouterVM"
@@ -83,3 +118,5 @@ interfaces = [
 """
 
         
+# iptables -t nat -I POSTROUTING 2 ! -s 10.1.1.0/24 -d 10.1.1.0/24 -j SNAT --to-source 10.1.1.2
+# iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -d 10.1.1.0/24 -j SNAT --to-source 10.1.1.2
