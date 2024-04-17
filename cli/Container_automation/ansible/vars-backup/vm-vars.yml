@@ -1,0 +1,14 @@
+vms:
+  - vm_name: pub_client
+    vcpu: 2
+    mem: 2048
+    disk_size: 12G
+    interfaces: 
+      - network_name: "pubnw"
+        iface_name: enp1s0
+        dhcp: false
+        ipaddress: 10.10.10.8/24
+        #gateway: 10.10.10.2
+        nameserver: 8.8.8.8
+ 
+    
