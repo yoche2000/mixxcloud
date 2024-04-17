@@ -35,6 +35,7 @@
     - name: assign ip to the veth end in container 
       command: "ip netns exec {{ container_name }} ip addr add {{ ip_address }} dev {{ container_name+bridge_name }}inf"
       become: yes
+      when: ip_address is defined
     
     #Add gateway for vpc router
     - name: add default route

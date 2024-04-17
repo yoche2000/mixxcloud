@@ -1,5 +1,5 @@
 import subprocess
-
+import sys
 target_ips = sys.argv[1:]
 
 def list_rules():

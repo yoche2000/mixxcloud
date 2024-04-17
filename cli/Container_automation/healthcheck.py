@@ -25,7 +25,7 @@ def list_rules():
 def find_rule(rules, target_ip):
     for line in rules.split('\n'):
         if target_ip in line:
-            print(line)
+            # print(line)
             parts = line.split()
             print(parts)
             if 'to:' in line and 'PREROUTING' in parts:
@@ -45,14 +45,13 @@ def update_rules(target_ips):
         rules = list_rules()
         line_number = find_rule(rules, target_ip)
         print(line_number)
-        """
         if line_number:
             print(f"Deleting rule with destination {target_ip} at line {line_number}")
             output = delete_rule(line_number)
             print("Rule deleted:", output)
         else:
             print(f"No rule found for destination {target_ip}")
-        """
+
 
 
 def health_check():
@@ -70,5 +69,9 @@ def health_check():
 
 while True:
     health_check()
-    time.sleep(10)
+    time.sleep(1)
+
+# iptables -A PREROUTING -t nat -p tcp -d 10.10.10.6 --dport 8080 -m statistic --mode random --probability 1 -j DNAT --to-destination 10.1.1.5:80
+# sudo iptables -A INPUT -p icmp --icmp-type echo-request -j DROP
+
     

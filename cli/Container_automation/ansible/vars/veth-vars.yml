@@ -5,18 +5,18 @@
 #gateway_vpc: 172.16.0.1
 
 # veth betweeb vpc and pub
-container_name: C2
-bridge_name: pub
-ip_address: 10.10.10.6/24
+#container_name: C2
+#bridge_name: pub
+
 
 # veth betweeb lb and subnet
-#container_name: lb
-#bridge_name: C1S1
-#ip_address: 10.10.0.6/24
-#gateway_lb: 10.10.0.1
+container_name: C2
+bridge_name: C2S1
+ip_address: 10.1.1.7/24
+gateway_lb: 10.1.1.1
 
 # veth betweeb lb and pub
 #container_name: lb
 #bridge_name: pub
-#ip_address: 10.10.10.4/24
+
 
