@@ -28,7 +28,7 @@ def find_rule(rules, target_ip):
             # print(line)
             parts = line.split()
             print(parts)
-            if 'to:' in line and 'PREROUTING' in parts:
+            if f'to:{target_ip}:80' in parts:
                 print(parts[0])
                 line_number = parts[0]
                 return line_number
@@ -48,7 +48,9 @@ def update_rules(target_ips):
         if line_number:
             print(f"Deleting rule with destination {target_ip} at line {line_number}")
             output = delete_rule(line_number)
-            print("Rule deleted:", output)
+            print("Rule deleted..")
+            vm_ips.remove(target_ip)
+            print(f"Updated the Monitoring IPs:{vm_ips}")
         else:
             print(f"No rule found for destination {target_ip}")
 
@@ -65,9 +67,10 @@ def health_check():
             if failure_counts[ip] > max_failures:
                 print(f"{ip} is not healthy. Failed to respond {failure_counts[ip]} times.")
                 update_rules([ip])
-                exit
+                # exit(0)
 
 while True:
+    print(vm_ips)
     health_check()
     time.sleep(1)
 
