@@ -1,3 +1,2 @@
-container_name: testns1
-ips: 192.x.x.x 192.x.x.x 
-# Ips are to be given in a single string, space separated.
+container_name: KVPC
+target_ips: 1.1.1.1 2.2.2.2
