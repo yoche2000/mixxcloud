@@ -1,4 +1,5 @@
-container_name: VM2
-container_image: vmserver
-vcpu: 2
-mem: 2048m
+container_name: LC1
+container_image: vpcrouter
+#vcpu: 2
+#mem: 2048m
+# container_image: nginx-ip-display

@@ -6,10 +6,18 @@
     - vars/lb-vars.yml
     
   tasks:
-    - name: generate lb rules
+    - name: generate lbaas rules
       template:
-        src: lb_rules.j2
+        src: lbaas_rules.j2
         dest: "{{ playbook_dir }}/{{ container_name }}_rules.sh"
+      when: lb_snat_ip is defined
+      become: yes
+    
+    - name: generate Iaas LB rules
+      template:
+        src: iaas_lb_rules.j2
+        dest: "{{ playbook_dir }}/{{ container_name }}_rules.sh"
+      when: lb_snat_ip is not defined
       become: yes
     
     - name: add rules to the LB container
