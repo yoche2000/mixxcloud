@@ -13,4 +13,4 @@ class healthCheckConfiguration:
             yaml.dump(data, file, sort_keys=False)
         print(f"Container Configuration File Is Created...")
 
-# healthCheckConfiguration.createHealthCheckVarsFiles("KVPC", "1.1.1.1 2.2.2.2")
+healthCheckConfiguration.createHealthCheckVarsFiles("KVPC", "10.2.3.4 10.2.3.6")

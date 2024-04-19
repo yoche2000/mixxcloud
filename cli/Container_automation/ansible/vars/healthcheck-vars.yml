@@ -1,2 +1,2 @@
 container_name: KVPC
-target_ips: 1.1.1.1 2.2.2.2
+target_ips: 10.2.3.4 10.2.3.6

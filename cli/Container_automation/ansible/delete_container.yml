@@ -1,0 +1,17 @@
+---
+- name: Delete container
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: stop the container
+      command: "docker stop {{ container_name }}"
+      become: yes
+
+    - name: remove the container
+      command: "docker rm {{ container_name }}"
+      become: yes
+    
+    - name: delete the namespace
+      command: "ip netns delete {{ container_name }}"
+      become: yes

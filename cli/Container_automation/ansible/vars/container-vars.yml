@@ -1,4 +1,4 @@
-container_name: LC1
+container_name: CS5
 container_image: vpcrouter
 #vcpu: 2
 #mem: 2048m

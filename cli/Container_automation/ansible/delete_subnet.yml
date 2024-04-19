@@ -1,0 +1,33 @@
+---
+- name: Delete Subnet
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Delete the veth end on bridge in the namespace
+      command: "ip netns exec {{ container_name }} ip link delete {{ container_name+subnet_name }}inf"
+      become: yes
+      
+    - name: Delete the bridge in the namespace
+      command: "ip netns exec {{ container_name }} ip link delete {{ container_name+subnet_name }}"
+      become: yes
+
+    - name: Set the bridge down
+      command: "ip link set down {{ container_name+subnet_name }}"
+      become: yes
+    
+    - name: Delete the bridge in the host
+      command: "brctl delbr {{ container_name+subnet_name }}"
+      become: yes
+    
+    - name: stop the virsh network
+      community.libvirt.virt_net:
+        command: destory
+        name: "{{ container_name+subnet_name }}"
+      become: yes
+      
+    - name: undefine the virsh network
+      community.libvirt.virt_net:
+        command: undefine
+        name: "{{ container_name+subnet_name }}"
+      become: yes

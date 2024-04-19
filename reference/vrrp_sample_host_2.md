@@ -2,9 +2,9 @@ This file contains sample scripts for vrrp in multiple hosts
 
 
 ```
-vrrp_instance VI_1 {
+vrrp_instance VI_2 {
     interface C2pubinf
-    state BACKUP
+    state MASTER
     virtual_router_id 1
     priority 101
     advert_int 2
@@ -25,7 +25,7 @@ vrrp_instance VI_1 {
 ```
 vrrp_instance VI_2 {
     interface C2pubinf
-    state MASTER
+    state BACKUP
     virtual_router_id 1
     priority 101
     advert_int 2
@@ -44,5 +44,5 @@ vrrp_instance VI_2 {
 ```
 
 ```sh
-sudo ip netns exec C2 keepalived -f /etc/keepalived/keepalived-C2.conf
+sudo ip netns exec C2 keepalived -f /etc/keepalived/keepalived-C2.conf  --dont-fork --log-console --log-detail
 ```

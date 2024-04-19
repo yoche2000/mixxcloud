@@ -29,17 +29,17 @@
 
     #Assign it to namespace
     - name: assign on end to namespace
-      command: "ip link set {{ container_name+subnet_name }}inf1 netns {{ container_name }}"  
+      command: "ip link set {{ container_name+subnet_name }}inf netns {{ container_name }}"  
       become: yes
 
     #Assign it to namespace bridge
     - name: assign to namespace bridge
-      command: "ip netns exec {{ container_name }} brctl addif {{ container_name+subnet_name }} {{ container_name+subnet_name }}inf1 "
+      command: "ip netns exec {{ container_name }} brctl addif {{ container_name+subnet_name }} {{ container_name+subnet_name }}inf "
       become: yes
     
     #Assign other to host bridge
     - name: assign other end to host bridge
-      command: "brctl addif {{ container_name+subnet_name }} {{ container_name+subnet_name }}inf"
+      command: "brctl addif {{ container_name+subnet_name }} {{ container_name+subnet_name }}inf1"
       become: yes
     
     #Bring the host bridge up
@@ -54,12 +54,12 @@
     
     #Bring the host bridge interface up
     - name: bringing host bridge interface up
-      command: "ip link set up {{ container_name+subnet_name }}inf"
+      command: "ip link set up {{ container_name+subnet_name }}inf1"
       become: yes
          
     #Bring the namespace bridge interface up
     - name: bringing namespace bridge interface up
-      command: "ip netns exec {{ container_name }} ip link set up {{ container_name+subnet_name }}inf1"
+      command: "ip netns exec {{ container_name }} ip link set up {{ container_name+subnet_name }}inf"
       become: yes
 
     #add vxlan

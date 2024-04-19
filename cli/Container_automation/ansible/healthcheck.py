@@ -49,11 +49,9 @@ def update_rules(target_ips):
             print(f"Deleting rule with destination {target_ip} at line {line_number}")
             output = delete_rule(line_number)
             print("Rule deleted..")
-            vm_ips.remove(target_ip)
             print(f"Updated the Monitoring IPs:{vm_ips}")
         else:
             print(f"No rule found for destination {target_ip}")
-
 
 
 def health_check():
@@ -67,12 +65,12 @@ def health_check():
             if failure_counts[ip] > max_failures:
                 print(f"{ip} is not healthy. Failed to respond {failure_counts[ip]} times.")
                 update_rules([ip])
-                # exit(0)
 
-while True:
+
+for i in range(5):
     print(vm_ips)
     health_check()
-    time.sleep(1)
+    time.sleep(0.5)
 
 # iptables -A PREROUTING -t nat -p tcp -d 10.10.10.6 --dport 8080 -m statistic --mode random --probability 1 -j DNAT --to-destination 10.1.1.5:80
 # sudo iptables -A INPUT -p icmp --icmp-type echo-request -j DROP

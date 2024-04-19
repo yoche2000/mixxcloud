@@ -12,7 +12,6 @@ class healthCheckWorkflow:
         # ip netns exec KVPC python3 healthcheck.py 10.2.3.4 10.2.3.6
         """
         command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/start_healthcheck.yml", '-l', 'even']
-        file_path = f"{Files.CONTAINER_VARS_FILE_PATH.value}"
         with open(file_path, 'w') as file:
             yaml.dump(data, file, sort_keys=False)
         print(f"Container Configuration File Is Created...")

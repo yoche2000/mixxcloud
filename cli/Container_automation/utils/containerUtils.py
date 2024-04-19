@@ -62,6 +62,9 @@ class containerConfiguration:
     
     @staticmethod
     def createLBToSUBNETVarsFile(container_name, bridge_name, ip_address, gateway_lb):
+        '''
+        this is for vmcontainer to subnet as well
+        '''
         data = {
             "container_name": container_name,
             "bridge_name": bridge_name,
@@ -90,17 +93,32 @@ class containerConfiguration:
         print(f"Subnet Configuration File Is Created...")
     
     @staticmethod
-    def createLBVarsFile(container_name, lb_ip, tenantIps):
+    def createLBVarsFile(container_name, lb_ip, lb_snat_ip, tenantIps):
         data = {
             "container_name": container_name,
             "lb_ip": lb_ip,
+            "lb_snat_ip": lb_snat_ip,
             "tenantIps": tenantIps
         }
-        file_path = f"{Files.VETH_VARS_FILE_PATH.value}"
+        file_path = f"{Files.LB_VARS_FILE_PATH.value}"
         with open(file_path, 'w') as file:
             yaml.dump(data, file, sort_keys=False)
         print(f"LB Configuration File Is Created...")
     
+    @staticmethod
+    def createVMContainersVarsFile(container_name,container_image,vcpu,mem):
+        data = {
+            "container_name": container_name,
+            "container_image": container_image,
+            "vcpu": vcpu,
+            "mem": mem
+
+        }
+        file_path = f"{Files.CONTAINER_VARS_FILE_PATH.value}"
+        with open(file_path, 'w') as file:
+            yaml.dump(data, file, sort_keys=False)
+        print(f"VMContainer Configuration File Is Created...")
+
     @staticmethod
     def createVMVarsFile(vm_name, vcpu, mem, disk_size, interfaces):
         data = {

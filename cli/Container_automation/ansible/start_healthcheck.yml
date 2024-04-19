@@ -1,0 +1,16 @@
+---
+- name: Initiate Health Checks
+  hosts: all
+  become: yes
+  vars_files:
+    - vars/healthcheck-vars.yml
+
+  tasks:
+    # Run the Health Check Rules
+    - name: Health Check Rules
+      command: "ip netns exec {{ container_name }} python3 {{ playbook_dir }}/healthcheck.py {{ target_ips }}"
+      become: yes
+      register: script_output
+    - name: Output the results from the Python script
+      debug:
+        var: script_output.stdout_lines

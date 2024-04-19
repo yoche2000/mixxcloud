@@ -1,7 +1,7 @@
 # veth betweeb vpc and pvt
-#container_name: KVPC
+#container_name: T1
 #bridge_name: pvt
-#ip_address: 172.16.8.1/12
+#ip_address: 172.16.9.5/12
 #gateway_vpc: 172.16.0.1
 
 # veth betweeb vpc and pub
@@ -16,14 +16,13 @@
 #gateway_lb: 10.2.3.2
 
 # veth betweeb lb and pub
-container_name: KVPC
-bridge_name: pub
-ip_address: 10.10.10.11/24
+#container_name: KVPC
+#bridge_name: pub
 
 # veth betweeb vminstance and subnet
-#container_name: VM2
-#bridge_name: KVPCS0
-#ip_address: 10.2.3.6/24
-#gateway_lb: 10.2.3.2
+container_name: TH1
+bridge_name: T1S1
+ip_address: 10.2.3.7/24
+gateway_lb: 10.2.3.1
 
 
