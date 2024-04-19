@@ -8,7 +8,7 @@ def get_logger(tenant_name):
 
     # Create a file handler specifically for this tenant
     # The mode 'a' (append) is default and is explicitly set here for clarity
-    file_handler = logging.FileHandler(f'{tenant_name}_api_log.log', mode='a')
+    file_handler = logging.FileHandler(f'logs/{tenant_name}_api_log.log', mode='a')
     file_handler.setLevel(logging.INFO)
     
     formatter = logging.Formatter('%(asctime)s - %(message)s')
@@ -17,10 +17,10 @@ def get_logger(tenant_name):
     loggers[tenant_name] = logger
     return loggers[tenant_name]
 
-def log_api_call(api_call, tenant_name):
+def log_api_call(tenant_name, api_call):
     logger = get_logger(tenant_name)
     logger.info(f'API Call: {api_call}')
 
 # Usage - # Import the log_api_call into the caller functions.
-log_api_call(f'CreateBridge - {bridgename}', 'TenantA')
-log_api_call('/api/user/update', 'TenantB')
+log_api_call('TenantA', f'CreateBridge')
+
