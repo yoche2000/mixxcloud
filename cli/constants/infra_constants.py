@@ -9,3 +9,6 @@ HOST_PUBLIC_BR_NAME = "pub"
 ROUTER_VM_VCPU = 2
 ROUTER_VM_MEM = 2048
 ROUTER_VM_DISK_SIZE = 10
+
+
+REGION_MAPPING = {"east": "odd", "west": 'even'}

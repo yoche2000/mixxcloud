@@ -25,12 +25,19 @@ class VPCStatus(Enum):
     ERROR = 6
 
 class VPC:
-    def __init__(self, name, region, subnets = None, routerVM = None, status = VPCStatus.UNDEFINED.name, _id = None):
+    def __init__(self, 
+                 name, 
+                 subnets = None, 
+                 container_east = None,
+                 container_west = None,
+                 status = VPCStatus.UNDEFINED.name,
+                 _id = None
+                 ):
         self._id = _id
         self.name = name
-        self.region = region
         self.subnets: List[str] = subnets or []
-        self.routerVM = routerVM
+        self.container_east = container_east
+        self.container_west = container_west
         self.status = VPCStatus[status]
 
     def list_subnets(self, db) -> List[Subnet]:
@@ -52,7 +59,7 @@ class VPC:
         return self._id
 
     def to_dict(self):
-        return {"name": self.name, "region": self.region, "subnets": self.subnets, 'routerVM': self.routerVM, "status": self.status.name}
+        return {"name": self.name, "subnets": self.subnets, 'container_east': self.container_east, 'container_west': self.container_west, "status": self.status.name}
     
     def delete(self, db):
         if self._id is not None:
@@ -67,7 +74,14 @@ class VPC:
     @staticmethod
     def from_dict(data):
         if data is None: return
-        return VPC(data['name'], data['region'], data['subnets'], data['routerVM'], status=data['status'], _id = data['_id'], )
+        print(data)
+        return VPC(data['name'], 
+                   data['subnets'], 
+                   container_east=data['container_east'],
+                   container_west=data['container_west'], 
+                   status=data['status'],
+                   _id = data['_id'], 
+                   )
 
     @staticmethod
     def find_by_name(db, name):

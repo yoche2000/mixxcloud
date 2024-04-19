@@ -1,7 +1,7 @@
 import subprocess
 import json
 from southbound_utils import Commands
-from utils import containerUtils
+from Container_automation.utils.containerUtils import containerConfiguration
 import traceback
 
 class LB_CRUD_Workflows:
@@ -12,7 +12,7 @@ class LB_CRUD_Workflows:
         '''
         try:
             print(f"LB rules for {container_name} has been triggered..")
-            containerUtils.containerConfiguration.createLBVarsFile(container_name, lb_ip, lb_snat_ip, tenantIps)
+            containerConfiguration.createLBVarsFile(container_name, lb_ip, tenantIps)
             command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_rules_LB.yml",  '-l', 'odd']
             Commands.run_command(command)
             print(f"LB rules for {container_name} has been completed..")
@@ -25,9 +25,9 @@ class VMContainer_CRUD_Workflows:
     @staticmethod
     def run_ansible_playbook_for_vmcontainer_creation(container_name,container_image,vcpu,mem):
         try:
-            print(f"VMContainer creation for {container_name} has been triggered..")
-            containerUtils.containerConfiguration.createVMContainersVarsFile(container_name,container_image,vcpu,mem)
-            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_container.yml",  '-l', 'odd']
+            print(f"VM creation for {vmName} has been triggered..")
+            containerConfiguration.createVMVarsFile(vmName, vCPU, memory, diskSize, interfaces)
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_vm.yml",  '-l', 'odd']
             Commands.run_command(command)
             print(f"VMContainer creation for {container_name} has been completed..")
             return True
@@ -43,7 +43,7 @@ class Subnet_CRUD_Workflows:
         '''
         try:
             print(f"Subent Creation for {container_name} has been triggered..")
-            containerUtils.containerConfiguration.createContainerSubnetVarsFile(container_name, subnet_name, subnet, gateway, vni_id, local_ip, remote_ip)
+            containerConfiguration.createContainerSubnetVarsFile(container_name, subnet_name, subnet, gateway, vni_id, local_ip, remote_ip)
             command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_subnet.yml",  '-l', 'odd']
             Commands.run_command(command)
             print(f"Subent Creation for {container_name} has been completed..")
@@ -68,11 +68,13 @@ class Subnet_CRUD_Workflows:
 
 class Container_CRUD_Workflows:
     @staticmethod
-    def run_ansible_playbook_for_container_creation(container_name, container_image):
+    def run_ansible_playbook_for_container_creation(container_name, container_image, region):
         try:
             print(f"Container Creation for {container_name} has been triggered..")
-            containerUtils.containerConfiguration.createContainerVarsFiles(container_name, container_image)
-            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_container.yml",  '-l', 'odd']
+            containerConfiguration.createContainerVarsFiles(container_name, container_image)
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_container.yml"]
+            if region is not None:
+                command.extend(['-l', region])
             Commands.run_command(command)
             print(f"Container Creation for {container_name} has been completed..")
             return True
@@ -94,18 +96,57 @@ class Container_CRUD_Workflows:
         return True
 
     @staticmethod
+    def run_ansible_playbook_for_container_to_sb_connection(container_name, bridge_name, ip_address, default_ip, region, is_nat):
+        # testing
+        # print(container_name, bridge_name, ip_address, default_ip, region, is_nat)
+        try:
+            print(f"Veth pair Creation for {container_name} and  {bridge_name} has been triggered..")
+            containerConfiguration.createContainerVarsForSubnetConnection(container_name, bridge_name, ip_address, default_ip, is_nat)
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_veth_container_bridge.yml"]
+            if region is not None:
+                command.extend(['-l', region])
+            print(command)
+            Commands.run_command(command)
+            print(f"Veth pair Creation for {container_name} and  {bridge_name} has been completed..")
+            return True
+        except Exception as error:
+            traceback.print_exc()
+            print(f"Veth pair Creation for {container_name} and  {bridge_name}. More details: {error}")
+            return False
+        
+    @staticmethod
+    def run_ansible_playbook_for_container_subnet_creation(container_name, subnet_name, subnet, gateway, vni_id, local_ip, remote_ip, region = None):
+        try:
+            print(f"Subnet Creation started for {container_name} and  {subnet_name} has been triggered..")
+            containerConfiguration.createContainerSubnetVarsFile(container_name, subnet_name, subnet, gateway, vni_id, local_ip, remote_ip)
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_subnet.yml"]
+            if region is not None:
+                command.extend(['-l', region])
+            print(command)
+            Commands.run_command(command)
+            print(f"Subnet Creation for {container_name} and  {subnet_name} has been completed..")
+            return True
+        except Exception as error:
+            traceback.print_exc()
+            print(f"Subnet Creation for {container_name} and  {subnet_name}. More details: {error}")
+            return False
+        
+
+    @staticmethod
     def run_ansible_playbook_for_vpc_to_pvt(container_name, bridge_name, ip_address, gateway_vpc):
         '''
         this is for container to act as vpc router, container to pvt bridge veth pair
         '''
         try:
             print(f"Veth pair Creation for {container_name} and  {bridge_name} has been triggered..")
-            containerUtils.containerConfiguration.createVPCToPVTVarsFile(container_name, bridge_name, ip_address, gateway_vpc)
-            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_veth_container_bridge.yml",  '-l', 'odd']
+            containerConfiguration.createVPCToPVTVarsFile(container_name, bridge_name, ip_address, gateway_vpc)
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_veth_container_bridge.yml"]
+            print(command)
             Commands.run_command(command)
             print(f"Veth pair Creation for {container_name} and  {bridge_name} has been completed..")
             return True
         except Exception as error:
+            traceback.print_exc()
             print(f"Veth pair Creation for {container_name} and  {bridge_name}. More details: {error}")
             return False
     
@@ -116,7 +157,7 @@ class Container_CRUD_Workflows:
         '''
         try:
             print(f"Veth pair Creation for {container_name} and  {bridge_name} has been triggered..")
-            containerUtils.containerConfiguration.createVPCToPVTVarsFile(container_name, bridge_name)
+            containerConfiguration.createVPCToPVTVarsFile(container_name, bridge_name)
             command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_veth_container_bridge.yml",  '-l', 'odd']
             Commands.run_command(command)
             print(f"Veth pair Creation for {container_name} and  {bridge_name} has been completed..")
@@ -132,7 +173,7 @@ class Container_CRUD_Workflows:
         '''
         try:
             print(f"Veth pair Creation for {container_name} and  {bridge_name} has been triggered..")
-            containerUtils.containerConfiguration.createVPCToPVTVarsFile(container_name, bridge_name)
+            containerConfiguration.createVPCToPVTVarsFile(container_name, bridge_name)
             command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_veth_container_bridge.yml",  '-l', 'odd']
             Commands.run_command(command)
             print(f"Veth pair Creation for {container_name} and  {bridge_name} has been completed..")
@@ -150,7 +191,7 @@ class Container_CRUD_Workflows:
         
         try:
             print(f"Veth pair Creation for {container_name} and  {bridge_name} has been triggered..")
-            containerUtils.containerConfiguration.createVPCToPVTVarsFile(container_name, bridge_name, ip_address, gateway_lb)
+            containerConfiguration.createVPCToPVTVarsFile(container_name, bridge_name, ip_address, gateway_lb)
             command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_veth_container_bridge.yml",  '-l', 'odd']
             Commands.run_command(command)
             print(f"Veth pair Creation for {container_name} and  {bridge_name} has been completed..")

@@ -3,7 +3,7 @@ from bson.objectid import ObjectId
 
 
 class Interface:
-    def __init__(self, ip_address, mac_address, network_mask, gateway, instance_id, subnet_id, interface_name, load_balancer = None, _id = None):
+    def __init__(self, ip_address, mac_address, network_mask, gateway, instance_id, subnet_id, interface_name, is_nat = False, _id = None):
         self.ip_address = ip_address
         self.mac_address = mac_address
         self.network_mask = network_mask
@@ -11,7 +11,7 @@ class Interface:
         self.instance_id = instance_id
         self.subnet_id = subnet_id
         self.interface_name = interface_name
-        self.load_balancer = load_balancer
+        self.is_nat = is_nat
         self._id = _id
 
     def save(self, db):
@@ -34,7 +34,7 @@ class Interface:
                  "instance_id": self.instance_id,
                  "subnet_id": self.subnet_id,
                  "interface_name": self.interface_name,
-                 "load_balancer": self.load_balancer,
+                 "is_nat": self.is_nat,
                  }
     
     def delete(self, db):
@@ -54,7 +54,7 @@ class Interface:
                           data['instance_id'], 
                           data['subnet_id'], 
                           data['interface_name'], 
-                          data['load_balancer'], 
+                          data['is_nat'], 
                           _id = data['_id']
                           )
     
@@ -104,5 +104,3 @@ class Interface:
             else:
                 interface_num = db.interface.count_documents({"instance_id": instance_id, 'interface_name':{'$regex':'^ep'}}) + 1
                 return f"ep{interface_num}"
-        
-        

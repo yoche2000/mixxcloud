@@ -1,4 +1,4 @@
-from southbound_constants import Files
+from Container_automation.southbound_constants import Files
 import yaml
 
 class containerConfiguration:
@@ -24,6 +24,22 @@ class containerConfiguration:
         with open(file_path, 'w') as file:
             yaml.dump(data, file, sort_keys=False)
         print(f"Container Configuration File Is Created...")
+
+    @staticmethod
+    def createContainerVarsForSubnetConnection(container_name, bridge_name, ip_address, default_ip, is_nat):
+        print(container_name, bridge_name, ip_address, default_ip, is_nat)
+        data = {
+            "container_name": container_name,
+            "bridge_name": bridge_name,
+            "ip_address": ip_address,
+            "nat": is_nat,
+        }
+        if default_ip is not None:
+            data["default_ip"] = default_ip
+        file_path = f"{Files.VETH_VARS_FILE_PATH.value}"
+        with open(file_path, 'w') as file:
+            yaml.dump(data, file, sort_keys=False)
+        print(f"Veth Configuration File Is Created...")
 
     @staticmethod
     def createVPCToPVTVarsFile(container_name, bridge_name, ip_address, gateway_vpc):

@@ -24,7 +24,7 @@ def format_disk_size(disk_size):
         return f"{disk_size}G"
 
 class VM:
-    def __init__(self, name, vCPU, vMem, disk_size, vpc_id, interfaces: List[str] | None = None, isRouterVM = False, state = VMState.UNDEFINED.name, _id = None, load_balancer = None):
+    def __init__(self, name, vCPU, vMem, disk_size, vpc_id, region, interfaces: List[str] | None = None, isRouterVM = False, state = VMState.UNDEFINED.name, _id = None, load_balancer = None):
         self._id = _id
         self.name = name
         self.vCPU = vCPU
@@ -35,6 +35,7 @@ class VM:
         self.interfaces = interfaces or []
         self.isRouterVM = isRouterVM 
         self.load_balancer = load_balancer
+        self.region = region
 
 
     def list_interfaces(self, db):

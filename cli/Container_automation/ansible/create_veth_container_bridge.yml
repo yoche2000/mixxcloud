@@ -39,18 +39,18 @@
     
     #Add gateway for vpc router
     - name: add default route
-      command: "ip netns exec {{ container_name }} ip route add default via {{ gateway_vpc }} dev {{ container_name+bridge_name }}inf"
+      command: "ip netns exec {{ container_name }} ip route add default via {{ default_ip }} dev {{ container_name+bridge_name }}inf"
       become: yes
-      when: gateway_vpc is defined
+      when: default_ip is defined
 
     #Add gateway for lb 
-    - name: add default route
-      command: "ip netns exec {{ container_name }} ip route add default via {{ gateway_lb }} dev {{ container_name+bridge_name }}inf"
-      become: yes
-      when: gateway_lb is defined
+    # - name: add default route
+    #   command: "ip netns exec {{ container_name }} ip route add default via {{ gateway_lb }} dev {{ container_name+bridge_name }}inf"
+    #   become: yes
+    #   when: gateway_lb is defined
 
     #source NAT
     - name: adding NAT rule for SNAT
       command: "ip netns exec {{ container_name }} iptables -t nat -A POSTROUTING -o {{ container_name+bridge_name }}inf -j MASQUERADE"
       become: yes
-      when: gateway_vpc is defined
+      when: nat

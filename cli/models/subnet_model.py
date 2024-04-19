@@ -11,7 +11,7 @@ from utils.utils import Utils
 from ipaddress import ip_network, IPv4Network
 from bson.objectid import ObjectId
 # from controllers.subnet_controller import SubnetController
-
+# from utils.ip_utils import IPUtils
 class SubnetStatus(Enum):
     UNDEFINED = 1
     STARTING = 2
@@ -26,9 +26,10 @@ class SubnetType(Enum):
 
 class Subnet:
     def __init__(self,
-                 subnet,
+                 cidr,
                  network_name,
                  bridge_name,
+                 vni_id,
                  status = SubnetStatus.UNDEFINED.name,
                  subnet_type = SubnetType.DEFAULT.name,
                  _id = None,
@@ -41,10 +42,11 @@ class Subnet:
         # 192.168.2.1 - GATEWAY
         # 192.168.2.2 - IP START
         # 192.168.2.255 - IP RANGE
-        self.subnet = subnet #192.168.2.0/24
-        self._subnet: IPv4Network = ip_network(subnet)
+        self.cidr = cidr #192.168.2.0/24
+        self._subnet: IPv4Network = ip_network(cidr)
         self.status = SubnetStatus[status]
         self.subnet_type = SubnetType[subnet_type]
+        self.vni_id = vni_id
 
     def get_gateway_ip(self):
         ip_addr = self._subnet.hosts()
@@ -61,7 +63,7 @@ class Subnet:
         return self._subnet.is_private
     
     def get_host_mask(self):
-        return self.subnet.split('/')[1]
+        return self.cidr.split('/')[1]
 
     def get_ipobj(self):
         return self._subnet
@@ -79,7 +81,8 @@ class Subnet:
         return self._id
 
     def to_dict(self):
-        return {"subnet": self.subnet,
+        return {"cidr": self.cidr,
+                "vni_id": self.vni_id,
                 "network_name": self.network_name,
                 "bridge_name": self.bridge_name,
                 "type": self.subnet_type.name,
@@ -93,12 +96,16 @@ class Subnet:
 
     def json(self):
         Utils.print_json(self.to_dict())
+        
+    # def get_gateway(self, db, region: str):
+    #     return IPUtils.get_unique_ip_from_region(db, self._id, region, is_gateway = True)
 
     @staticmethod
     def from_dict(data):
-        return Subnet(data['subnet'],
+        return Subnet(data['cidr'],
                       data['network_name'],
                       data['bridge_name'],
+                      data['vni_id'],
                       status=data['status'],
                       subnet_type=data['type'],
                       _id = data['_id'])

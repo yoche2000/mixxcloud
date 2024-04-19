@@ -2,6 +2,8 @@ from ipaddress import IPv4Address, IPv4Network
 import random
 from typing import List
 from bson.objectid import ObjectId
+from controllers.container_controller import ContainerController
+from models.container_model import Container
 from controllers.subnet_controller import SubnetController
 from controllers.vm_controller import VMController
 from models.vpc_model import VPC, VPCStatus
@@ -10,55 +12,11 @@ from models.vm_model import VM, VMState
 from models.interface_model import Interface
 from models.tenant_model import Tenant
 from constants.infra_constants import HOST_PUBLIC_NETWORK, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, HOST_NAT_NETWORK
+from utils.ip_utils import IPUtils
 
 import traceback
 
-class VPCController:
-    @staticmethod
-    def add_subnet(db, vpc: VPC | str, subnet: Subnet | ObjectId |str ) -> bool:
-        try:
-            if isinstance(vpc, str):
-                vpc = VPC.find_by_name(db, vpc)
-            if not vpc:
-                raise Exception("VPC not found")
-            if isinstance(subnet, str):
-                tmp = Subnet.find_by_name(db, subnet)
-                if not tmp:
-                    subnet = Subnet.find_by_id(db, ObjectId(subnet))
-            elif isinstance(subnet, ObjectId):
-                subnet = Subnet.find_by_id(db, subnet)
-            if not subnet:
-                raise Exception("Subnet not found")
-            vpc.subnets.append(subnet.get_id())
-            vpc.save(db)
-            return True
-        except:
-            return False
-    
-    """
-    @staticmethod
-    def remove_subnet(db, vpc: VPC | str, subnet: Subnet | ObjectId |str) -> bool:
-        try:
-            if isinstance(vpc, str):
-                vpc = VPC.find_by_name(db, vpc)
-            if not vpc:
-                raise Exception("VPC not found")
-            if isinstance(subnet, str):
-                tmp = Subnet.find_by_name(db, subnet)
-                if not tmp:
-                    subnet = Subnet.find_by_id(db, ObjectId(subnet))
-            elif isinstance(subnet, ObjectId):
-                subnet = Subnet.find_by_id(db, subnet)
-            if not subnet:
-                raise Exception("Subnet not found")
-            if subnet.get_id() in vpc.subnets:
-                vpc.subnets.remove(subnet.get_id())
-            vpc.save(db)
-            return True
-        except:
-            return False
-    """
-        
+class VPCController:        
     @staticmethod
     def list_subnets(db, vpc: VPC | str) -> List[Subnet]:
         try:
@@ -75,7 +33,7 @@ class VPCController:
         
     # use
     @staticmethod
-    def create_subnet(db, tenant: Tenant | str, vpc: VPC | str, cidr: str, network_name: str, bridge_name: str) -> Subnet | None:
+    def create_subnet(db, tenant: Tenant | str, vpc: VPC | str, cidr: str, network_name: str) -> Subnet | None:
         try:
             if isinstance(tenant, str):
                 tenant = Tenant.find_by_name(db, tenant)
@@ -84,36 +42,26 @@ class VPCController:
             subnets: List[Subnet] = VPCController.list_subnets(db, vpc)
             print("Returned Subnets for the VPC:",subnets)
             conflict = False
-            tmp = Subnet(cidr, network_name, bridge_name)
-            cidr: IPv4Network = tmp.get_ipobj()
+            sb_nw = Subnet(cidr, network_name, network_name)
+            cidr: IPv4Network = sb_nw.get_ipobj()
             if db.subnet.find_one({"network_name":network_name}):
                 print(f"Cannot create network with libvirt {network_name} - Conflict exists")
                 return None
-            if db.subnet.find_one({"bridge_name":bridge_name}):
-                print(f"Cannot create network with birdge {bridge_name} - Conflict exists")
-                return None
             for subnet in subnets:
-                if cidr.overlaps(subnet.get_ipobj()) or subnet.network_name == network_name or subnet.bridge_name == bridge_name:
+                if cidr.overlaps(subnet.get_ipobj()) or subnet.network_name == network_name:
                     conflict = True
                     break
             if conflict:
                 print(f"Cannot create subnet with {cidr} - Conflict exists")
                 return None
-            tmp.save(db)
-            vpc.subnets.append(tmp.get_id())
+            sb_nw.save(db)
+            vpc.subnets.append(sb_nw.get_id())
             vpc.save(db)
-            if vpc.routerVM is None:
-                VPCController.create_router(db, tenant, vpc)
-            # router_vm:VM = VM.find_by_id(db, vpc.routerVM)
-            VMController.undefine(db, vpc.routerVM)
-            VMController.connect_to_network(db, vpc.get_id(), tmp.get_id(), vpc.routerVM, is_gateway=True)
-            
-            # TODO: Modify states for when VPC is running
-            if vpc.status == VPCStatus.RUNNING:
-                SubnetController.define(db, tenant, vpc, tmp)
-                VMController.start(db, vpc.routerVM)
 
-            return tmp
+            # VMController.undefine(db, vpc.routerVM)
+            ContainerController.connect_to_network(db, vpc.get_id(), sb_nw.get_id(), None, False)
+
+            return sb_nw
         except Exception as e :
             print('Exception occured', e)
             traceback.print_exc()
@@ -172,6 +120,7 @@ class VPCController:
     
     @staticmethod        
     def create_router(db, tenant: Tenant | str, vpc: VPC | str):
+        print('Create router called')
         try:
             if isinstance(tenant, str):
                 tenant = Tenant.find_by_name(db, tenant)
@@ -179,18 +128,31 @@ class VPCController:
                 vpc = VPC.find_by_name(db, vpc)
                 if not vpc:
                     raise Exception("VPC not found")
-            if vpc.routerVM is not None:
+            if vpc.container_east is not None:
                 return True
-            name = f'RVM_{tenant.name.upper()}_{vpc.name.upper()}'
-            router_vm = VM(name, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, vpc.get_id(), isRouterVM = True)
-            router_vm.save(db)
-            vpc.routerVM = router_vm.get_id()
-            vpc.save(db)
+            
+            name = f'{tenant.name.upper()}{vpc.name.upper()}'
+            # router_vm = VM(name, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, vpc.get_id(), isRouterVM = True)
+            # router_vm.save(db)
             
             sb = Subnet.find_by_name(db, HOST_NAT_NETWORK)
-            VMController.connect_to_network(db, vpc.get_id(), sb.get_id(), router_vm.get_id(), default=True)
+            
+            container_east = Container(name, 'vpcrouter', 'east', '1', '1024',).save(db)
+            container_west = Container(name, 'vpcrouter', 'west', '1', '1024',).save(db)
+            
+            ContainerController.create(db, container_east.get_id())
+            ContainerController.create(db, container_west.get_id())
+            
+            ContainerController.connect_to_network(db, container_east.get_id(), sb.get_id(), is_nat=True, default_route=IPUtils.get_default_subnet_gateway(db, sb.get_id(), container_east.region))
+            ContainerController.connect_to_network(db, container_west.get_id(), sb.get_id(), is_nat=True, default_route=IPUtils.get_default_subnet_gateway(db, sb.get_id(), container_west.region))
+            
+            vpc.container_east = container_east.get_id()
+            vpc.container_west = container_west.get_id()
+            vpc.save(db)
+            
             return True
         except:
+            traceback.print_exc()
             return False
     
     # use

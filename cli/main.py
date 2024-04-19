@@ -1,6 +1,6 @@
 # from models.vm_model import VM
 # from models import  Tenant, VM
-from controllers.vm_controller import VMController
+# from controllers.vm_controller import VMController
 from models.db_model import DB
 from models.vm_model import VM, VMState
 from models.tenant_model import Tenant
@@ -17,6 +17,11 @@ import console
 from controllers.tenant_controller import TenantController
 from controllers.vpc_controller import VPCController
 from controllers.subnet_controller import SubnetController
+
+from models.container_model import Container
+from controllers.container_controller import ContainerController
+from bson.objectid import ObjectId
+from utils.ip_utils import IPUtils
 
 def is_root():
     return os.geteuid() == 0
@@ -68,17 +73,17 @@ def main():
     infra_sb = Subnet.find_by_name(db, HOST_NAT_NETWORK)
     if not infra_sb:
         print(f"Creating {HOST_NAT_NETWORK}")
-        infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME, subnet_type = SubnetType.NAT.name).save(db)
+        infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME, 1, SubnetStatus.RUNNING.name).save(db)
     
-    # if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
-    #     print(f"Defining {HOST_NAT_NETWORK}")
-    #     # infra_sb.define_net(db)
-    #     SubnetController.define(db, None, None, infra_sb)
+    # # if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
+    # #     print(f"Defining {HOST_NAT_NETWORK}")
+    # #     # infra_sb.define_net(db)
+    # #     SubnetController.define(db, None, None, infra_sb)
 
     public_sb =  Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
     if not public_sb:
         print(f"Creating {HOST_PUBLIC_NETWORK}")
-        public_sb = Subnet(HOST_PUBLIC_SUBNET, HOST_PUBLIC_NETWORK, HOST_PUBLIC_BR_NAME).save(db)
+        public_sb = Subnet(HOST_PUBLIC_SUBNET, HOST_PUBLIC_NETWORK, HOST_PUBLIC_BR_NAME, 2, SubnetStatus.RUNNING.name).save(db)
     
 
     # if public_sb.status != SubnetStatus.RUNNING and public_sb.status != SubnetStatus.ERROR:
@@ -185,17 +190,38 @@ def main():
     # VMController.add_lb_ip_target(db, vpc.routerVM, 'app1', '10.15.15.3')
     # VMController.add_lb_ip_target(db, vpc.routerVM, 'app1', '10.15.15.4')
     
+    # cont = Container('C11', 'vpcrouter', 'east', '100', '200',)
+    # cont.save(db)
+    # ContainerController.create(db, cont.get_id())
+    
+    # sb = Subnet.find_by_name(db, HOST_NAT_NETWORK)
+    # ContainerController.connect_to_network(db, cont.get_id(), sb.get_id(), is_nat=False, default_route='172.16.0.1')
     
     
+    tnt = Tenant('T12')
+    # tnt = Tenant.find_by_name(db, 'T11')
+    tnt.save(db)
     
+    vpc1 = TenantController.create_vpc(db, tnt, 'C2')
+    # vpc1 = VPC.find_by_name(db, 'C1')
     
+    # sb = Subnet.find_by_name(db, 'SB4')
     
+    sb = ContainerController.create_subnet_in_container(db, vpc1.get_id(), 'SB2', '192.168.20.0/24')
+    # sb = Subnet.find_by_name(db, 'T11C1SB1')
+    # print(sb.bridge_name)
     
-
-
+    server1 = Container('s16', 'zecaro/php-info:latest', 'west', '1', '1024').save(db)
+    server2 = Container('s17', 'zecaro/php-info:latest', 'east', '1', '1024').save(db)
+    
+    ContainerController.create(db, server1.get_id())
+    ContainerController.create(db, server2.get_id())
+    
+    default1 = IPUtils.get_default_subnet_gateway(db, sb.get_id(), server1.region)
+    default2 = IPUtils.get_default_subnet_gateway(db, sb.get_id(), server2.region)
+    
+    ContainerController.connect_to_network(db, server1.get_id(), sb.get_id(), default1, False )
+    ContainerController.connect_to_network(db, server2.get_id(), sb.get_id(), default2, False )
+    
 if __name__ == '__main__':
-    if is_root():
-        main()
-    else:
-        print("Run the script as sudo")
-        exit(1)
+    main()

@@ -172,17 +172,6 @@ class SubnetController:
         os.system("sudo brctl show | grep "+bridgename)
 
     @staticmethod
-    def rmBridge(bridgename: str, success, failure):
-        SubnetController.check_is_not_empty(bridgename)
-        os.system("sudo ip link set down "+bridgename)
-        os.system("brctl delbr "+bridgename)
-        try:
-            t = subprocess.check_output(f"brctl show | grep {bridgename}")
-            failure()
-        except:
-            success()
-
-    @staticmethod
     def isRunning(bridgename: str):
         SubnetController.check_is_not_empty(bridgename)
         t = subprocess.check_output("sudo brctl show", shell=True)
