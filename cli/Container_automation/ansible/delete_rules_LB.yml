@@ -17,3 +17,8 @@
       command: "ip netns exec {{ container_name }} iptables -t nat -D POSTROUTING 1"
       become: yes
       when: not iaas
+
+    - name: delete veth interface
+      command: "ip netns exec {{ container_name }} ip link delete {{ container_name }}pubinf"
+      become: yes
+      when: iaas
