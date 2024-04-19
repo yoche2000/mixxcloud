@@ -4,6 +4,10 @@
   become: yes
 
   tasks:
+    - name: Delete vxlan interface
+      command: "ip netns exec {{ container_name }} ip link delete vxlan{{ vni_id }}"
+      become: yes
+
     - name: Delete the veth end on bridge in the namespace
       command: "ip netns exec {{ container_name }} ip link delete {{ container_name+subnet_name }}inf"
       become: yes
@@ -25,7 +29,7 @@
         command: destory
         name: "{{ container_name+subnet_name }}"
       become: yes
-      
+
     - name: undefine the virsh network
       community.libvirt.virt_net:
         command: undefine

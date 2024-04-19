@@ -1,0 +1,19 @@
+---
+- name: Delete rules for LB
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: flush all the prerouting rules
+      command: "ip netns exec {{ container_name }} iptables -t nat -F PREROUTING"
+      become: yes
+    
+    - name: delete the snat rule for IAAS approach
+      command: "ip netns exec {{ container_name }} iptables -t nat -D POSTROUTING 2"
+      become: yes
+      when: iaas
+    
+    - name: delete the snat rule for LAAS approach
+      command: "ip netns exec {{ container_name }} iptables -t nat -D POSTROUTING 1"
+      become: yes
+      when: not iaas
