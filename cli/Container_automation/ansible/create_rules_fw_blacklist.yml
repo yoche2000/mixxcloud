@@ -3,7 +3,7 @@
   hosts: all
   become: yes
   vars_files:
-    - vars/firewall-vars.yml
+    - vars/fw-blacklist-vars.yml
     
   tasks:
     - name: Check if the network namespace exists

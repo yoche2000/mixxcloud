@@ -7,8 +7,8 @@ class healthCheckConfiguration:
             "container_name": container_name,
             "target_ips": target_ips
         }
-        print(f"Preparing to create the Health Check File: ../ansible/vars/healthcheck-vars.yml")
-        file_path = f"../ansible/vars/healthcheck-vars.yml"
+        print(f"Preparing to create the Health Check File: ansible/vars/healthcheck-vars.yml")
+        file_path = f"ansible/vars/healthcheck-vars.yml"
         with open(file_path, 'w') as file:
             yaml.dump(data, file, sort_keys=False)
         print(f"Health Check Configuration File Is Created...")
@@ -33,8 +33,8 @@ class securityConfiguration:
             "container_name": container_name,
             "rules": rule
         }
-        print(f"Preparing to Rate Limit Configuration File: ../ansible/vars/fw-ratelimit-vars.yml")
-        file_path = f"../ansible/vars/fw-ratelimit-vars.yml"
+        print(f"Preparing to Rate Limit Configuration File: ansible/vars/fw-ratelimit-vars.yml")
+        file_path = f"ansible/vars/fw-ratelimit-vars.yml"
         with open(file_path, 'w') as file:
             yaml.dump(data, file, sort_keys=False)
         print(f"Rate Limit Configuration File Is Created...")
@@ -47,8 +47,8 @@ class securityConfiguration:
             "container_name": container_name,
             "rules": rule
         }
-        print(f"Preparing to Black List IP Configuration File: ../ansible/vars/fw-blacklist-vars.yml")
-        file_path = f"../ansible/vars/fw-blacklist-vars.yml"
+        print(f"Preparing to Black List IP Configuration File: ansible/vars/fw-blacklist-vars.yml")
+        file_path = f"ansible/vars/fw-blacklist-vars.yml"
         with open(file_path, 'w') as file:
             yaml.dump(data, file, sort_keys=False)
         print(f"Black List Configuration File Is Created...")
