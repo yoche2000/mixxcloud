@@ -1,0 +1,17 @@
+---
+- name: Create Firewall - Rate Limit Rules
+  hosts: all
+  become: yes
+  vars_files:
+    - vars/fw-ratelimit-vars.yml
+    
+  tasks:
+    - name: Check if the network namespace exists
+      shell: "ip netns list | grep -w {{ container_name }}"
+      register: ns_check
+      ignore_errors: true
+    - name: Execute iptables rules in the container namespace
+      command: "ip netns exec {{ container_name }} {{ item }}"
+      loop: "{{ rules }}"
+      when: ns_check.rc == 0
+      become: yes

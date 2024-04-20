@@ -17,6 +17,7 @@ class healthCheckConfiguration:
 class securityConfiguration:
     @staticmethod
     def createRateLimitVarsFiles(container_name, secureLevel):
+        # Sample Rule: iptables -A INPUT -p tcp -m state --state NEW -m recent -i KZVPCpubinf --update --seconds 120 --hitcount 2000 -j DROP
         if secureLevel == "HIGH":
             hitcount = 10
         elif secureLevel == "MODERATE":
@@ -40,6 +41,7 @@ class securityConfiguration:
     
     @staticmethod
     def createBlackListVarsFile(container_name, sourceIP):
+        # Sample Rule: iptables -A INPUT -i KZVPCpubinf -s 1.1.1.2 -j DROP
         rule = [f"iptables -A INPUT -i {container_name}pubinf -s {sourceIP} -j DROP"]
         data = {
             "container_name": container_name,
