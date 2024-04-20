@@ -14,7 +14,7 @@ from .vm_model import VM
 from .interface_model import Interface
 from utils.utils import Utils
 from constants.infra_constants import HOST_NAT_NETWORK
-
+from bson.objectid import ObjectId
 
 class VPCStatus(Enum):
     UNDEFINED = 1
@@ -31,6 +31,8 @@ class VPC:
                  container_east = None,
                  container_west = None,
                  status = VPCStatus.UNDEFINED.name,
+                 lbs = {},
+                 lb_running = False,
                  _id = None
                  ):
         self._id = _id
@@ -39,12 +41,17 @@ class VPC:
         self.container_east = container_east
         self.container_west = container_west
         self.status = VPCStatus[status]
+        self.lbs = lbs
+        self.lb_running = lb_running
 
     def list_subnets(self, db) -> List[Subnet]:
         return list(db.subnet.find({'_id': {'$in': self.subnets}}))
 
-    def get_router(self) -> VM:
-        return VM.find_by_id(self.routerVM)
+    def get_router(self, region: str) -> ObjectId:
+        if region == 'east':
+            return self.container_east
+        else:
+            return self.container_west
 
     def save(self, db):
         if self._id is None:
@@ -59,7 +66,15 @@ class VPC:
         return self._id
 
     def to_dict(self):
-        return {"name": self.name, "subnets": self.subnets, 'container_east': self.container_east, 'container_west': self.container_west, "status": self.status.name}
+        return {
+                "name": self.name,
+                "subnets": self.subnets,
+                'container_east': self.container_east,
+                'container_west': self.container_west,
+                "status": self.status.name,
+                "lbs": self.lbs,
+                "lb_running": self.lb_running,
+               }
     
     def delete(self, db):
         if self._id is not None:
@@ -74,12 +89,14 @@ class VPC:
     @staticmethod
     def from_dict(data):
         if data is None: return
-        print(data)
+        # print(data)
         return VPC(data['name'], 
                    data['subnets'], 
                    container_east=data['container_east'],
                    container_west=data['container_west'], 
                    status=data['status'],
+                   lbs = data['lbs'],
+                   lb_running = data['lb_running'],
                    _id = data['_id'], 
                    )
 

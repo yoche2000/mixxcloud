@@ -6,14 +6,16 @@ import traceback
 
 class LB_CRUD_Workflows:
     @staticmethod
-    def run_ansible_playbook_for_lb_rules(container_name, lb_ip, lb_snat_ip, tenantIps):
+    def run_ansible_playbook_for_lb_rules(container_name, lb_ip, lb_snat_ip, tenantIps, region = None):
         '''
         this is for adding load balancer rules
         '''
         try:
             print(f"LB rules for {container_name} has been triggered..")
-            containerConfiguration.createLBVarsFile(container_name, lb_ip, tenantIps)
-            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_rules_LB.yml",  '-l', 'odd']
+            containerConfiguration.createLBVarsFile(container_name, lb_ip, lb_snat_ip, tenantIps)
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_rules_LB.yml"]
+            if region is not None:
+                command.extend(['-l', region])
             Commands.run_command(command)
             print(f"LB rules for {container_name} has been completed..")
             return True
@@ -22,10 +24,12 @@ class LB_CRUD_Workflows:
             return False
     
     @staticmethod
-    def run_ansible_playbook_for_lb_rules_deletion(container_name, iaas):
+    def run_ansible_playbook_for_lb_rules_deletion(container_name, iaas, region = None):
         try:
             print(f"LB rules Deletion for {container_name}  has been triggered..")
-            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "ansible/delete_rules_LB.yml", "-e", f"container_name={container_name}", "-e", f"iaas={iaas}", '-l', 'even']
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/delete_rules_LB.yml", "-e", f"container_name={container_name}", "-e", f"iaas={iaas}"]
+            if region is not None:
+                command.extend(['-l', region])
             Commands.run_command(command)
             print(f"LB rules Deletion for {container_name} has been completed..")
         except Exception as e:
@@ -96,10 +100,12 @@ class Container_CRUD_Workflows:
             return False
     
     @staticmethod
-    def run_ansible_playbook_for_container_deletion(container_name):
+    def run_ansible_playbook_for_container_deletion(container_name, region = None):
         try:
             print(f"Container Deletion for {container_name} has been triggered..")
-            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "ansible/delete_container.yml", "-e", f"container_name={container_name}", '-l', 'even']
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/delete_container.yml", "-e", f"container_name={container_name}", '-l', 'even']
+            if region is not None:
+                command.extend(['-l', region])
             Commands.run_command(command)
             print(f"Container Deletion for {container_name} has been completed..")
         except Exception as e:

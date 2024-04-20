@@ -8,6 +8,7 @@ class ContainerStatus(Enum):
     UPDATING = 3
     STOPPED = 4
     DELETING = 5
+    ERROR = 6
 
 class Container:
     def __init__(self, name, image, region, vCPU, mem, interfaces = [], status = ContainerStatus.UNDEFINED.name,_id= None):

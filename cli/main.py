@@ -198,30 +198,47 @@ def main():
     # ContainerController.connect_to_network(db, cont.get_id(), sb.get_id(), is_nat=False, default_route='172.16.0.1')
     
     
-    tnt = Tenant('T12')
-    # tnt = Tenant.find_by_name(db, 'T11')
+    # tnt = Tenant('TC')
+    tnt = Tenant.find_by_name(db, 'TB')
     tnt.save(db)
     
-    vpc1 = TenantController.create_vpc(db, tnt, 'C2')
-    # vpc1 = VPC.find_by_name(db, 'C1')
+    # vpc1 = TenantController.create_vpc(db, tnt, 'CE')
+    vpc1 = VPC.find_by_name(db, 'CE')
     
-    # sb = Subnet.find_by_name(db, 'SB4')
+    # sb = Subnet.find_by_name(db, 'TCCDSD')
     
-    sb = ContainerController.create_subnet_in_container(db, vpc1.get_id(), 'SB2', '192.168.20.0/24')
+    sb = ContainerController.create_subnet_in_container(db, vpc1.get_id(), 'SE', '192.168.40.0/24')
     # sb = Subnet.find_by_name(db, 'T11C1SB1')
     # print(sb.bridge_name)
     
-    server1 = Container('s16', 'zecaro/php-info:latest', 'west', '1', '1024').save(db)
-    server2 = Container('s17', 'zecaro/php-info:latest', 'east', '1', '1024').save(db)
+    server1 = Container('TEST7', 'zecaro/php-info:latest', 'west', '1', '1024').save(db)
+    server2 = Container('TEST8', 'zecaro/php-info:latest', 'east', '1', '1024').save(db)
     
-    ContainerController.create(db, server1.get_id())
-    ContainerController.create(db, server2.get_id())
+    # server1 = Container.find_by_name(db, 'TEST3')
+    # server2 = Container.find_by_name(db, 'TEST4')
     
-    default1 = IPUtils.get_default_subnet_gateway(db, sb.get_id(), server1.region)
-    default2 = IPUtils.get_default_subnet_gateway(db, sb.get_id(), server2.region)
+    # ContainerController.create(db, server1.get_id())
+    # ContainerController.create(db, server2.get_id())
     
-    ContainerController.connect_to_network(db, server1.get_id(), sb.get_id(), default1, False )
-    ContainerController.connect_to_network(db, server2.get_id(), sb.get_id(), default2, False )
+    # default1 = IPUtils.get_default_subnet_gateway(db, sb.get_id(), server1.region)
+    # default2 = IPUtils.get_default_subnet_gateway(db, sb.get_id(), server2.region)
+    
+    # ContainerController.connect_to_network(db, server1.get_id(), sb.get_id(), default1, False )
+    # ContainerController.connect_to_network(db, server2.get_id(), sb.get_id(), default2, False )
+    
+    # input("Continue ?")
+    
+    # ContainerController.create_load_balancer(db, None, vpc1.get_id(), 'app1', '10.10.10.84', LBType.VM)
+    # targets = [
+    #         {"ip_address": "192.168.40.3", "weight": 1},
+    #         {"ip_address": "192.168.40.4", "weight": 1},
+    #     ]
+    # ContainerController.add_ip_targets(db, None, vpc1.get_id(), 'app1', targets)
+    # ContainerController.delete_ip_rules(db, None, vpc1.get_id(), 'lb_name')
+    # ContainerController.create_lb_rules(db, None, vpc1.get_id(), 'lb_name')
+    ContainerController.delete_loadbalancer(db, None, vpc1.get_id(), 'app1')
+    # ContainerController.delete_container(db, None, server1.get_id())
+    # ContainerController.delete_container(db, None, server2.get_id())
     
 if __name__ == '__main__':
     main()
