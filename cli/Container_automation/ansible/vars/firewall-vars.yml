@@ -1,4 +1,0 @@
-container_name: testns1
-rules:
-    - iptables -A INPUT -p tcp -m state --state NEW -m recent -i dummycheck --update --seconds 120 --hitcount 10 -j DROP
-    - iptables -A INPUT -i dummycheck -s 1.1.1.1 -j DROP

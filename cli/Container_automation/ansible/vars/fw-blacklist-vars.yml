@@ -1,0 +1,3 @@
+container_name: KZVPC
+rules:
+- iptables -A INPUT -i KZVPCpubinf -s 1.1.1.2 -j DROP

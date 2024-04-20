@@ -1,0 +1,4 @@
+container_name: KZVPC
+rules:
+- iptables -A INPUT -p tcp -m state --state NEW -m recent -i KZVPCpubinf --update
+  --seconds 120 --hitcount 2000 -j DROP
