@@ -14,14 +14,16 @@ class LoadBalancer:
                  name: str,
                  vpc_id: str,
                  type = LBType.IAAS.name,
-                 lb_instance : ObjectId | None = None,
+                 instance_east : ObjectId | None = None,
+                 instance_west : ObjectId | None = None,
                  lb_ip : str | None = None,
                  target_group = [],
-                 _id = None
+                 _id = None,
                  ):
         self.name = name
         self.type = LBType[type]
-        self.lb_instance = lb_instance
+        self.instance_east = instance_east
+        self.instance_west = instance_west
         self.lb_ip = lb_ip
         self.target_group = target_group
         self.vpc_id = vpc_id
@@ -35,10 +37,12 @@ class LoadBalancer:
                 if target['ip'] == ip_address:
                     raise Exception('ip already exists')
             self.target_group.append({'ip':ip_address, "weight": weight})
-            self.save(db)    
+            self.save(db)
+            return True
         except Exception:
             traceback.print_exc()
             print("invalid ip address")
+            return False
     
     def rm_ip_address(self, db, ip_address: str):
         try:
@@ -48,9 +52,11 @@ class LoadBalancer:
                     self.target_group.remove(target)
                     break
             self.save(db)
+            return True
         except:
             traceback.print_exc()
             print("invalid ip address")
+            return False
             
     def save(self, db):
         if self._id is None:
@@ -68,7 +74,8 @@ class LoadBalancer:
         return {
                 "name": self.name,
                 "type": self.type.name,
-                "lb_instance": self.lb_instance,
+                "instance_east": self.instance_east,
+                "instance_west": self.instance_west,
                 "lb_ip": self.lb_ip,
                 "target_group": self.target_group,
                 "vpc_id": self.vpc_id,
@@ -85,7 +92,7 @@ class LoadBalancer:
     @staticmethod
     def from_dict(data):
         if data is None: return
-        return LoadBalancer(data['name'], data['vpc_id'], lb_instance = data['lb_instance'], lb_ip = data['lb_ip'], target_group= data['target_group'],  _id = data['_id'], )
+        return LoadBalancer(data['name'], data['vpc_id'], type= data['type'], lb_ip = data['lb_ip'], target_group= data['target_group'],  _id = data['_id'], instance_east = data['instance_east'], instance_west = data['instance_west'],)
     
     @staticmethod
     def find_by_name(db, name):

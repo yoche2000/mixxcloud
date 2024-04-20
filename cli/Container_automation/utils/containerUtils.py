@@ -31,9 +31,10 @@ class containerConfiguration:
         data = {
             "container_name": container_name,
             "bridge_name": bridge_name,
-            "ip_address": ip_address,
             "nat": is_nat,
         }
+        if ip_address:
+            data["ip_address"] = ip_address
         if default_ip is not None:
             data["default_ip"] = default_ip
         file_path = f"{Files.VETH_VARS_FILE_PATH.value}"

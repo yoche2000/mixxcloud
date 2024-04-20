@@ -1,8 +1,17 @@
+from enum import Enum
 from bson.objectid import ObjectId
 from utils.utils import Utils
 
+class ContainerStatus(Enum):
+    UNDEFINED = 1
+    RUNNING = 2
+    UPDATING = 3
+    STOPPED = 4
+    DELETING = 5
+    ERROR = 6
+
 class Container:
-    def __init__(self, name, image, region, vCPU, mem, interfaces = [], _id= None):
+    def __init__(self, name, image, region, vCPU, mem, interfaces = [], status = ContainerStatus.UNDEFINED.name,_id= None):
         self._id = _id
         self.name = name
         self.image = image
@@ -10,9 +19,8 @@ class Container:
         self.interfaces = interfaces
         self.vCPU = vCPU
         self.mem = mem
-        
-    
-    
+        self.status = ContainerStatus[status]
+
     def save(self, db):
         if self._id is None:
             obj = db.container.insert_one(self.to_dict())
@@ -33,6 +41,7 @@ class Container:
                  "mem": self.mem,
                  "interfaces": self.interfaces,
                  "region": self.region,
+                 "status": self.status.name
                  }
     
     def delete(self, db):
@@ -51,7 +60,8 @@ class Container:
                           data['vCPU'], 
                           data['mem'], 
                           interfaces = data['interfaces'],
-                          _id = data['_id']
+                          _id = data['_id'],
+                          status=data['status'],
                           )
     
     @staticmethod
