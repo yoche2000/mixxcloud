@@ -3,7 +3,7 @@ import yaml
 
 class containerConfiguration:
     @staticmethod
-    def createContainerVarsFiles(container_name,container_image):
+    def createContainerVarsFiles(container_name,container_image, vcpu = None, mem = None):
         """
         Creates a YAML file for container configuration.
         - container_name (str): Name of the container.
@@ -18,6 +18,9 @@ class containerConfiguration:
             "container_name": container_name,
             "container_image": container_image
         }
+        if vcpu and mem:
+            data['vpcu'] = vcpu
+            data['mem'] = mem
         
         print(f"Preparing to create the container Configuration File: {Files.CONTAINER_VARS_FILE_PATH}")
         file_path = f"{Files.CONTAINER_VARS_FILE_PATH.value}"

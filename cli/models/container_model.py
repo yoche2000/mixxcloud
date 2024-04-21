@@ -11,7 +11,7 @@ class ContainerStatus(Enum):
     ERROR = 6
 
 class Container:
-    def __init__(self, name, image, region, vCPU, mem, interfaces = [], status = ContainerStatus.UNDEFINED.name,_id= None):
+    def __init__(self, name, image, region, vCPU, mem, interfaces = [], status = ContainerStatus.UNDEFINED.name, _id= None, vpc_id = None):
         self._id = _id
         self.name = name
         self.image = image
@@ -20,6 +20,7 @@ class Container:
         self.vCPU = vCPU
         self.mem = mem
         self.status = ContainerStatus[status]
+        self.vpc_id = vpc_id
 
     def save(self, db):
         if self._id is None:
@@ -41,7 +42,8 @@ class Container:
                  "mem": self.mem,
                  "interfaces": self.interfaces,
                  "region": self.region,
-                 "status": self.status.name
+                 "status": self.status.name,
+                 "vpc_id": self.vpc_id,
                  }
     
     def delete(self, db):
@@ -62,6 +64,7 @@ class Container:
                           interfaces = data['interfaces'],
                           _id = data['_id'],
                           status=data['status'],
+                          vpc_id=data['vpc_id'],
                           )
     
     @staticmethod

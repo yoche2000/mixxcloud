@@ -1,9 +1,10 @@
-from ipaddress import IPv4Address, IPv4Network
+from ipaddress import IPv4Address, IPv4Network, ip_network
 import random
 from typing import List
 from bson.objectid import ObjectId
+from Container_automation.workflows import Container_CRUD_Workflows, Subnet_CRUD_Workflows
 from controllers.container_controller import ContainerController
-from models.container_model import Container
+from models.container_model import Container, ContainerStatus
 from controllers.subnet_controller import SubnetController
 from controllers.vm_controller import VMController
 from models.vpc_model import VPC, VPCStatus
@@ -11,7 +12,7 @@ from models.subnet_model import Subnet
 from models.vm_model import VM, VMState
 from models.interface_model import Interface
 from models.tenant_model import Tenant
-from constants.infra_constants import HOST_PUBLIC_NETWORK, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, HOST_NAT_NETWORK
+from constants.infra_constants import HOST_PUBLIC_NETWORK, REGION_MAPPING, ROUTER_VM_VCPU, ROUTER_VM_MEM, ROUTER_VM_DISK_SIZE, HOST_NAT_NETWORK
 from utils.ip_utils import IPUtils
 
 import traceback
@@ -239,4 +240,92 @@ class VPCController:
                 i = random.randrange(10)
         ip_address = str(ip_address)
         return ip_address
+    
+    @staticmethod
+    def create_subnet_in_container(db, vpc_id: ObjectId, subnet_name: str, cidr: str, ):
+        try:
+            vpc = VPC.find_by_id(db, vpc_id)
+            cont_even = Container.find_by_id(db, vpc.container_west)
+            cont_odd = Container.find_by_id(db, vpc.container_east)
+            
+            _inf_even = Interface.find_by_id(db, cont_even.interfaces[0])
+            _inf_odd = Interface.find_by_id(db, cont_odd.interfaces[0])
+            
+            if cont_even.status == ContainerStatus.ERROR or cont_even.status == ContainerStatus.UPDATING:
+                    return True
+            if cont_odd.status == ContainerStatus.ERROR or cont_odd.status == ContainerStatus.UPDATING:
+                    return True
+            
+            cont_even.status = ContainerStatus.UPDATING
+            cont_odd.status = ContainerStatus.UPDATING
+            cont_even.save(db)
+            cont_odd.save(db)
+            
+            container_name = cont_even.name
+            
+            nw_obj = ip_network(cidr)
+            
+            pipeline = [
+                {"$group": {"_id": None, "maxValue": {"$max": "$vni_id"} }}
+            ]
+            sb_max_vni = list(db['subnet'].aggregate(pipeline))[0]['maxValue']
+            if sb_max_vni < 10:
+                sb_max_vni = 9
+                
+            vni_id = sb_max_vni + 1
+            print(cont_even.name+subnet_name)
+            sb = Subnet(cidr, cont_even.name+subnet_name, cont_even.name+subnet_name, vni_id, vpc_id).save(db)
+            vpc.subnets.append(sb.get_id())
+            vpc.save(db)
+            
+            Container_CRUD_Workflows.run_ansible_playbook_for_container_subnet_creation(
+                container_name,
+                subnet_name,
+                cidr,
+                f"{str(nw_obj[2])}/{cidr.split('/')[1]}",
+                vni_id,
+                _inf_even.ip_address,
+                _inf_odd.ip_address,
+                region = REGION_MAPPING[cont_even.region],
+                )
+            Container_CRUD_Workflows.run_ansible_playbook_for_container_subnet_creation(
+                container_name,
+                subnet_name,
+                cidr,
+                f"{str(nw_obj[1])}/{cidr.split('/')[1]}",
+                vni_id,
+                _inf_odd.ip_address,
+                _inf_even.ip_address,
+                region = REGION_MAPPING[cont_odd.region]
+                )
+            cont_even.status = ContainerStatus.RUNNING
+            cont_odd.status = ContainerStatus.RUNNING
+            cont_even.save(db)
+            cont_odd.save(db)
+            return sb
+        except:
+            traceback.print_exc()
+            cont_even.status = ContainerStatus.ERROR
+            cont_odd.status = ContainerStatus.ERROR
+            cont_even.save(db)
+            cont_odd.save(db)
+            return None
+    
+    @staticmethod
+    def delete_subnet_in_container(db, vpc_id: ObjectId, subnet_name: str ):
+        try:
+            vpc = VPC.find_by_id(db, vpc_id)
+            container_name = Container.find_by_id(db, vpc.container_east).name
+            subnet = Subnet.find_by_name(db, container_name+subnet_name)
+            vni_id = subnet.vni_id
+            
+            Subnet_CRUD_Workflows.run_ansible_playbook_for_subnet_deletion(container_name, subnet_name, vni_id)
+            vpc.subnets.remove(subnet.get_id())
+            subnet.delete(db)
+            vpc.status = VPCStatus.RUNNING
+            vpc.save(db)
+        except:
+            vpc.status = VPCStatus.ERROR
+            vpc.save(db)
+            return False
     

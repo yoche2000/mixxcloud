@@ -85,10 +85,10 @@ class Subnet_CRUD_Workflows:
 
 class Container_CRUD_Workflows:
     @staticmethod
-    def run_ansible_playbook_for_container_creation(container_name, container_image, region):
+    def run_ansible_playbook_for_container_creation(container_name, container_image, region, vcpu = None, mem = None):
         try:
             print(f"Container Creation for {container_name} has been triggered..")
-            containerConfiguration.createContainerVarsFiles(container_name, container_image)
+            containerConfiguration.createContainerVarsFiles(container_name, container_image, vcpu, mem)
             command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_container.yml"]
             if region is not None:
                 command.extend(['-l', region])

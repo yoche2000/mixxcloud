@@ -30,6 +30,7 @@ class Subnet:
                  network_name,
                  bridge_name,
                  vni_id,
+                 vpc_id,
                  status = SubnetStatus.UNDEFINED.name,
                  subnet_type = SubnetType.DEFAULT.name,
                  _id = None,
@@ -47,6 +48,7 @@ class Subnet:
         self.status = SubnetStatus[status]
         self.subnet_type = SubnetType[subnet_type]
         self.vni_id = vni_id
+        self.vpc_id = vpc_id
 
     def get_gateway_ip(self):
         ip_addr = self._subnet.hosts()
@@ -86,7 +88,8 @@ class Subnet:
                 "network_name": self.network_name,
                 "bridge_name": self.bridge_name,
                 "type": self.subnet_type.name,
-                "status": self.status.name
+                "status": self.status.name,
+                "vpc_id": self.vpc_id,
                 }
     
     def delete(self, db):
@@ -106,6 +109,7 @@ class Subnet:
                       data['network_name'],
                       data['bridge_name'],
                       data['vni_id'],
+                      vpc_id=data['vpc_id'],
                       status=data['status'],
                       subnet_type=data['type'],
                       _id = data['_id'])

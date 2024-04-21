@@ -30,7 +30,7 @@ class IPUtils:
     def get_unique_ip_from_region(db, sb_id: ObjectId, region: str, is_gateway: bool = False ):
         if region not in ['even', 'odd']:
             region = REGION_MAPPING[region]
-        print(region)
+        # print(region)
         sbnw = Subnet.find_by_id(db, sb_id)
         subnet_nw = ip_network(sbnw.cidr)
         sb_nw = subnet_nw.hosts()

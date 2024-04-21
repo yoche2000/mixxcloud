@@ -1,6 +1,9 @@
+from ipaddress import ip_network
 import click
 import shutil
 import pyfiglet
+from controllers.container_controller import ContainerController
+from models.container_model import Container
 from controllers.tenant_controller import TenantController
 from controllers.subnet_controller import SubnetController
 from controllers.vm_controller import VMController
@@ -16,6 +19,9 @@ from models.vpc_model import VPC
 from models.lb_model import LoadBalancer, LBType
 from models.vm_model import VM
 import traceback
+from bson.objectid import ObjectId
+from utils.ip_utils import IPUtils
+from constants.infra_constants import HOST_PUBLIC_NETWORK
 # sudo apt-get install -y python3-pyfiglet
 # Usage from main.py: sudo python3 main.py
 # Usage from console.py: sudo python3 console.py
@@ -31,33 +37,46 @@ def dbclient():
     return db
 db = dbclient()
 
-tenantName = None
+tenant_id = None
+# vpc_id = None
 
-def login():
-    global tenantName
-    click.echo()
-    click.secho("1: Create New User-ID.", fg='cyan')
-    click.secho("2: Login to Existing Account.", fg='cyan')
-    click.secho("3: Exit", fg='cyan')
-    choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
+def login(message = True, choice = None):
+    global tenant_id
+    # click.echo()
+    if message:
+        click.secho("1: Create New User", fg='cyan')
+        click.secho("2: Login to Existing Account", fg='cyan')
+        click.secho("3: Exit", fg='cyan')
+        choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
     if choice == 1:
         tenantName = click.prompt(click.style("Please enter the tenant name", fg='yellow'), type=str)
+        if tenantName == 'exit':
+            login()
         tenant = Tenant.find_by_name(db, tenantName)
         if not tenant:
             tenant = Tenant(tenantName).save(db)
-            message = "Tenant is created successfully!!"
-            click.secho(message, fg='red') 
+            message = "\nTenant is created successfully!!"
+            click.secho(message, fg='green') 
+            tenant_id = tenant.get_id()
+            home()
         else:
-            message = "There is a teant with this name already, please provide a different name"
+            message = "\nThere is a tenant with this name already, please provide a different name"
             click.secho(message, fg='red')
-        exit()
+            click.secho("Try again, enter 'exit' to leave prompt", fg="yellow")
+            login(message=False, choice=choice)
     elif choice == 2:
         tenantName = click.prompt(click.style("Enter your User ID: ", fg='yellow'), type=str)
+        if tenantName == 'exit':
+            login()
         tenant = Tenant.find_by_name(db, tenantName)
         if not tenant:
             message = "There is no tenant with this name, please provide a different name.."
             click.secho(message, fg='red')
-            exit()
+            click.secho("Try again, enter 'exit' to leave prompt", fg="yellow")
+            login(message=False, choice=choice)
+        tenant_id = tenant.get_id()
+        click.secho('\n')
+        home()
     elif choice == 3:
         click.secho("Good bye! \U0001F44B \U0001F44B", fg='green')
         exit()
@@ -72,385 +91,338 @@ def display_welcome(title = pyfiglet.figlet_format("- MIXXCLOUD -", font="slant"
     click.echo()
     click.echo()
 
-def vm():
-    display_welcome(title = pyfiglet.figlet_format("- VM Console -", font="digital"), message="Choose an action to continue: \U0001F447")
-    click.secho("1: Create VM", fg='cyan')
-    click.secho("2: Attach VM to Subnet", fg='cyan')
-    click.secho("3: Detach VM to Subnet", fg='cyan')
-    click.secho("4: Delete VM", fg='cyan')
-    click.secho("5: VM Info", fg='cyan')
-    click.secho("6: Main Console", fg='cyan')
-    # Need to add more options, if required
-    click.echo()
+def home():
+    global tenant_id
+    click.secho("1: List Resources", fg='cyan')
+    click.secho("2: VPC", fg='cyan')
+    click.secho("3: Servers", fg='cyan')
+    click.secho("9: Log out", fg='cyan')
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
-
     if choice == 1:
-        vpcName = click.prompt(click.style("Enter VPC Name for which you want to create a VM: ", fg='yellow'), type=str)
-        vpcName = tenantName+"-"+vpcName 
-        vpcId = VPC.find_by_name(db,vpcName).get_id()
-        vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
-        vCPU = click.prompt(click.style("Enter vCPU for the VM: ", fg='yellow'), type=int)
-        vMem = click.prompt(click.style("Enter vMem for the VM: ", fg='yellow'), type=int)
-        disk_size = click.prompt(click.style("Enter disk_size for the VM: ", fg='yellow'), type=str)
-        network = click.prompt(click.style("Enter  SubNetwork name for the VM: ", fg='yellow'), type=str)
-        network = vpcName+"-"+network
-        subnetId = Subnet.find_by_name(db,network).get_id()
-        vm = VM(vmName,vCPU,vMem,disk_size,vpcId).save(db)
-        vmId = vm.find_by_name(db,vmName).get_id()
-        VMController.connect_to_network(db,vpcId,subnetId,vmId,default=True)
-        VMController.start(db, vmId)
-    # TODO: Append Logic For VM Name in Attach and Detach
+        pass
     elif choice == 2:
-        vmName = click.prompt(click.style("Enter your VM Name: ", fg='yellow'), type=str)
-        vmId = VM.find_by_name(db,vmName)
-        vpcId = vmId.vpc_id
-        vpcName = VPC.find_by_id(db, vpcId).name
-        subnetList = VPCController.list_subnets(db,vpcName)
-        click.secho(f"Subnets available are:", fg='cyan')
-        for subnet in subnetList:
-            print(subnet.network_name + ": " + subnet.subnet)
-        click.secho(f"Choose to attach the VM to any of the above subnets..", fg='cyan')
-        network = click.prompt(click.style(f"Enter SubNetwork name from the VPC - {vpcName}, you want to add for the VM: ", fg='yellow'), type=str)
-        network = vpcName+"-"+network
-        subnetId = Subnet.find_by_name(db,network).get_id()
-        VMController.connect_to_network(db,vpcId,subnetId,vmId.get_id())
+        vpc_home()
+    elif choice == 9:
+        tenant_id = None
+        login()
+        return
+    else:
+        click.secho("Invalid Choice selected", fg='red')
+        home()
 
+def vpc_home(message = True, choice = None):
+    global tenant_id
+    # global vpc_id
+    tenant = Tenant.find_by_id(db, tenant_id)
+    vpc_data = {}
+    
+    for vpcid in tenant.vpcs:
+        vpc = VPC.find_by_id(db, vpcid)
+        vpc_data[vpc.name] = vpc.get_id()
+    
+    if message:
+        print('\n')
+        if len(vpc_data) != 0:
+            click.secho(f"Available VPCs", fg='cyan')    
+            for vpc_name in vpc_data:
+                click.secho(f"{vpc_name}", fg='green')
+        click.secho("1: Create VPC", fg='cyan')
+        click.secho("2: List VPCs", fg='cyan')
+        click.secho("3: VPC Details", fg='cyan')
+        click.secho("4: Delete VPC", fg='cyan')
+        click.secho("9: Exit Menu", fg='cyan')
+    if choice is None:
+        choice = click.prompt(click.style("Please enter your choice", fg='yellow'), type=int)
+    if choice == 1:
+        # Create VPC Here
+        # VPCController.create_subnet_in_container(db, )
+        vpc_name = click.prompt(click.style("Enter VPC Name", fg='yellow'), type=str)
+        if vpc_name == 'exit':
+            vpc_home()
+        tenant = Tenant.find_by_id(db, tenant_id)
+        if vpc_name in vpc_data.keys():
+            click.secho("VPC Already exits", fg='red')
+            click.secho("Enter 'exit' to leave menu", fg='yellow')
+            vpc_home(message=False, choice=choice)
+        else: 
+            click.secho("Creating VPC", fg='green')
+            TenantController.create_vpc(db, tenant, vpc_name)
+            vpc_home()
+    elif choice == 2:
+        if len(vpc_data) != 0:
+            click.secho(f"Available VPCs", fg='cyan')    
+            for vpc_name in vpc_data:
+                click.secho(f"{vpc_name}", fg='green')
+        else:
+            click.secho(f"No available VPCs", fg='red') 
+        vpc_home(message=False)
     elif choice == 3:
-        vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
-        vmId = VM.find_by_name(db,vmName)
-        vpcId = vmId.vpc_id
-        vpcName = VPC.find_by_id(db, vpcId).name
-        network = click.prompt(click.style("Enter SubNetwork name you want to delete for the VM: ", fg='yellow'), type=str)
-        network = vpcName+"-"+network
-        subnetId = Subnet.find_by_name(db,network).get_id()
-        VMController.disconnect_from_network(db,vmId.get_id(),subnetId)
-
+        vpc_name = click.prompt(click.style("Enter VPC Name", fg='yellow'), type=str)
+        if vpc_name == 'exit':
+            vpc_home()
+        vpc_id = vpc_data.get(vpc_name, None)
+        if vpc_id is None:
+            click.secho(f"Choosen VPC not found", fg='red') 
+            click.secho(f"Try again, type 'exit' to exit", fg='red') 
+            vpc_home(message=False, choice=choice)
+        # VPC is selected
+        # vpc = VPC.find_by_id(db, vpc_id)
+        else:
+            vpc_detail(vpc_id = vpc_id)
     elif choice == 4:
-        vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
-        vm = VM.find_by_name(db, vmName)
-        VMController.undefine(db, vm.get_id())
-        vm.delete(db)
+        vpc_name = click.prompt(click.style("Enter VPC Name", fg='yellow'), type=str)
+        if vpc_name not in vpc_data:
+            click.secho("VPC not found", fg='cyan')
+        tenant = Tenant.find_by_id(db, tenant_id)
+        TenantController.delete_vpc(db, tenant, vpc_data[vpc_name])
+        vpc_home()
+    elif choice == 9:
+        home()
+        return
+    else:
+        click.secho("Incorrect option selected", fg='red')
+        vpc_home(message = False)
+        
+def vpc_detail(message=True, choice=None, vpc_id = None):
+    # global vpc_id
+    def check_overlap(cidr):
+        nw = ip_network(cidr)
+        for _sb_id in vpc.subnets:
+            _sb = Subnet.find_by_id(db, _sb_id)
+            if nw.overlaps(_sb.get_ipobj()):
+                click.secho("CIDR Ranges overlaps with existsing subnets", fg='red')
+                raise Exception("")
+    vpc = VPC.find_by_id(db, vpc_id)
+    loadbalancer_exists = True if vpc.lbs else False
+    
+    subnets_data = {}
+    for sb_id in vpc.subnets:
+        sb = Subnet.find_by_id(db, sb_id)
+        subnets_data[sb.network_name] = sb_id
+    
+    if message:
+        click.secho("1: List Subnets", fg='cyan')
+        click.secho("2: List Servers", fg='cyan')
+        click.secho("3: Create Subnet", fg='cyan')
+        click.secho("4: Delete Subnet", fg='cyan')
+        click.secho("5: Create Server", fg='cyan')
+        click.secho("6: Delete Server", fg='cyan')
+        if loadbalancer_exists:
+            click.secho("7: List Load Balancer Details", fg='cyan')
+            click.secho("8: Delete Load Balancer", fg='cyan')
+            click.secho("9: Add targets ips", fg='cyan')
+            click.secho("10: Delete targets ips", fg='cyan')
+        else: 
+            click.secho("7: Create Load Balancer", fg='cyan')
+            
+        click.secho("11: Exit Menu", fg='cyan')
 
+    if choice is None:
+        choice = click.prompt(click.style("Please enter your choice", fg='yellow'), type=int)
+    if choice == 1:
+        if len(subnets_data) > 0:
+            click.secho("Subnets Details", fg='cyan')
+            for _nw_name, _sb_id in subnets_data.items():
+                _sb = Subnet.find_by_id(db, _sb_id)
+                # subnets_data[sb.network_name] = sb_id
+                click.secho(f"    {_nw_name}\t\t{_sb.cidr}", fg='green')
+        else:
+            click.secho("No subnets found", fg='red')
+        vpc_detail(message=False, vpc_id=vpc_id)
+    elif choice == 2:
+        _servers = db.container.find({"vpc_id": vpc_id})
+        flag = True
+        for _server in _servers:
+            if flag: 
+                click.secho("Server details", fg='cyan')
+                flag = False
+            ser = Container.from_dict(_server)
+            click.secho(f"    {ser.name}", fg='cyan')
+            for _int in ser.interfaces:
+                _ip = Interface.find_by_id(db, _int)
+                _sb = Subnet.find_by_id(db, _ip.subnet_id)
+                click.secho(f"        {_sb.network_name} - {_ip.ip_address}", fg='green')
+        
+        if flag:
+            click.secho("No servers found", fg='red')
+            vpc_detail(message=False, vpc_id=vpc_id)
+        vpc_detail(vpc_id=vpc_id, message= False)
+            
+    elif choice == 3:
+        print("vpc_id", vpc_id)
+        subnet_name = click.prompt(click.style("Enter Subnet name", fg='yellow'), type=str)
+        cidr = click.prompt(click.style("Enter CIDR", fg='yellow'), type=str)
+        try:
+            check_overlap(cidr)
+        except:
+            while True:
+                click.secho("Entered CIDR was invalid", fg='red')
+                click.secho("Try again", fg='red')
+                try:
+                    cidr = click.prompt(click.style("Enter CIDR", fg='yellow'), type=str)
+                    check_overlap(cidr)
+                except:
+                    pass
+        print(vpc_id)
+        VPCController.create_subnet_in_container(db, vpc_id, subnet_name, cidr)
+        vpc_detail(vpc_id=vpc_id)
+    elif choice == 4:
+        # Display available subnets
+        subnet_name = click.prompt(click.style("Enter Subnet name", fg='yellow'), type=str)
+        VPCController.delete_subnet_in_container(db, vpc_id, subnet_name)
+        vpc_detail(vpc_id=vpc_id)
     elif choice == 5:
-        vmName = click.prompt(click.style("Enter your VM name: ", fg='yellow'), type=str)
-        vm = VM.find_by_name(db, vmName)
-        print(f"Vm Name is: {vm.name}")
-        print(f"CPU of the VM is: {vm.vCPU}")
-        print(f"Memory of the VM is: {vm.vMem}")
-        print(f"Disk Size of the VM is: {vm.disk_size}")
-        vpcId = vm.vpc_id
-        vpcName = VPC.find_by_id(db,vpcId).name
-        print(f"VPC name for which this VM belongs is: {vpcName}")
-        print(f"State of the VM is: {vm.state.name}")
-        Interfaces = vm.interfaces
-        print(f"Subnetworks of the VPC for which this VM is attached are: ")
-        for interface in Interfaces:
-            subnetID = Interface.find_by_id(db,interface).subnet_id
-            networkName = Subnet.find_by_id(db,subnetID).network_name
-            print(networkName)
+        subnet_name = click.prompt(click.style("Enter Subnet name", fg='yellow'), type=str)
+        if subnet_name not in subnets_data:
+            click.secho("Subnet not found, exiting...", fg='red')
+            vpc_detail(vpc_id=vpc_id)
+        container_name = click.prompt(click.style("Enter Container name", fg='yellow'), type=str)
+        container_image = click.prompt(click.style("Enter docker image", fg='yellow'), type=str)
+        click.secho("Avaiable Regions:", fg='cyan')
+        click.secho("east", fg='green')
+        click.secho("west", fg='green')
+        region = click.prompt(click.style("Enter region", fg='yellow'), type=str)
+        vcpu = click.prompt(click.style("Enter vCPUs", fg='yellow'), type=int)
+        mem = click.prompt(click.style("Enter memory (Ex: 2048m)", fg='yellow'), type=str)
+        cont = Container(container_name, container_image, region, vcpu, mem, vpc_id=vpc_id).save(db)
+        ContainerController.create(db, cont.get_id())
+        default_route = IPUtils.get_default_subnet_gateway(db, subnets_data[subnet_name], cont.region)
+        ContainerController.connect_to_network(db, cont.get_id(), subnets_data[subnet_name], default_route)
+        vpc_detail(vpc_id=vpc_id)
     elif choice == 6:
-        console()
-    else:
-        click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
-        console()
-    
-def tenant():
-    display_welcome(title = pyfiglet.figlet_format("- Tenant Console -", font="digital"), message="Choose an action to continue:")
-    click.secho("1: Delete Tenant", fg='cyan')
-    click.secho("2: List VPCs", fg='cyan')
-    click.secho("3: List Subnets", fg='cyan')
-    click.secho("4: List VMs", fg='cyan')
-    click.secho("5: Main Console", fg='cyan')
-
-    # Create tenant
-    click.echo()
-    choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
-
-    if choice == 1:
-        tenant = Tenant.find_by_name(db, tenantName)
-        print(tenant)
-        if not tenant:
-            message = "There is no tenant with this name, please try with the correct name"
-            click.secho(message, fg='red')
+        # List all containers
+        conatiner_data = {}
+        containers = db.container.find({'vpc_id': vpc_id})
+        for _c in containers:
+            container = Container.from_dict(_c)
+            conatiner_data[container.name] = container.get_id()
+        if len(conatiner_data) > 0:
+            click.secho("Available containers", fg='cyan')
+            for name in conatiner_data:
+                click.secho(f"{name}", fg='green')
         else:
-            tenant.delete(db)
-            message = "The given tenant and its associated VPCs have been deleted"
-            click.secho(message, fg='red')
-    elif choice == 2:
-        VPCList = TenantController.list_vpcs(db, tenantName)
-        for vpc in VPCList:
-            print(vpc.name)   
-    elif choice == 3:
-       VPCList = TenantController.list_vpcs(db, tenantName)
-       for vpc in VPCList:       
-            subnetList = VPCController.list_subnets(db,vpc.name)
-            for subnet in subnetList:
-                print(subnet.network_name + ": " + subnet.subnet)
-    elif choice == 4:
-        VPCList = TenantController.list_vpcs(db, tenantName)
-        for vpc in VPCList:
-            print(vpc.name + ": ") 
-            VMs = db.vm.find({'vpc_id': vpc._id})
-            for vm in VMs:
-                vmName = vm['name']
-                print(vmName)
-    elif choice == 5:
-        console()
-    else:
-        click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
-        console()
-
-
-def vpc():
-    display_welcome(title = pyfiglet.figlet_format("- VPC Console -", font="digital"), message="Choose an action to continue:")
-    click.secho("1: Create VPC", fg='cyan')
-    click.secho("2: Create and Attach Subnet to VPC", fg='cyan')
-    click.secho("3: Delete Subnet to VPC", fg='cyan')
-    click.secho("4: Delete VPC", fg='cyan')
-    click.secho("5: Main Console", fg='cyan')
-
-    click.echo()
-    choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
-
-    if choice == 1:
-        vpcName = click.prompt(click.style("Provide the VPC Name:", fg='yellow'), type=str)
-        vpcName = tenantName+"-"+vpcName
-        region = click.prompt(click.style("Provide the region of your choice:", fg='yellow'), type=str)
-        if not TenantController.create_vpc(db, tenantName, vpcName, region):
-            click.secho("VPC Configuation is UnSuccessful!! \U000026A0\U0000FE0F", fg='red')
-            return -1
-        vpc = TenantController.get_vpc_by_tenant_vpc_name(db, tenantName, vpcName)
-        status = VPCController.up(db, tenantName, vpc)
-        message = "VPC Creation is Successful!! \U00002714\U0000FE0F" if status is True else "VPC Creation is UnSuccessful!! \U000026A0\U0000FE0F" 
-        click.secho(message, fg='red')
-    elif choice == 2:
-        vpcName = click.prompt(click.style("Provide the VPC Name where you want to create Subnet:", fg='yellow'), type=str)
-        vpcName = tenantName+"-"+vpcName
-        click.secho(f"VPC ID: {vpcName}", fg='green')
-        subnetName = click.prompt(click.style("Provide the Sub-Network Name where you want to create Subnet:", fg='yellow'), type=str)
-        subnetName = vpcName+"-"+subnetName
-        click.secho(f"Subnet ID: {subnetName}", fg='green')
-        bridgeName = subnetName+"-"+"br"
-        click.secho(f"Bridge ID: {bridgeName}", fg='green')
-        subnetCIDR = click.prompt(click.style("Provide the Subnet CIDR (ex: 192.168.10.0/24):", fg='yellow'), type=str)
-        click.secho(f"Confirmed: {subnetCIDR}", fg='green')
-        status = VPCController.create_subnet(db,tenantName, vpcName, subnetCIDR, subnetName, bridgeName)
-        message = "Subnet Attachment is Successful!! \U00002714\U0000FE0F" if status is not None else "Subnet Attachment is UnSuccessful!! \U000026A0\U0000FE0F" 
-        click.secho(message, fg='red')
-    elif choice == 3:
-        click.secho(f"This is a destructive operation! Ensure all the VMs are moved to different subnet/deleted..", fg='red')
-        vpcName = click.prompt(click.style("Provide the VPC Name where you want to delete the Subnet:", fg='yellow'), type=str)
-        vpcName = tenantName+"-"+vpcName
-        click.secho(f"VPC ID: {vpcName}", fg='green')
-        subnetName = click.prompt(click.style("Provide the Sub-Network Name to delete:", fg='yellow'), type=str)
-        subnetName = vpcName+"-"+subnetName
-        click.secho(f"Subnet ID: {subnetName}", fg='green')
-        status = VPCController.remove_subnet(db, vpcName, subnetName)
-        message = "Subnet Deletion is Successful!! \U00002714\U0000FE0F" if status is True else "Subnet Deletion is UnSuccessful!! \U000026A0\U0000FE0F" 
-        click.secho(message, fg='red')
-    elif choice == 4:
-        vpcName = click.prompt(click.style("Provide the VPC Name which you want to delete:", fg='yellow'), type=str)
-        vpcName = tenantName+"-"+vpcName
-        subnetList = VPCController.list_subnets(db,vpcName)
-        if len(subnetList) != 0:
-            click.secho(f"VPC has multiple subnets..Delete them all first to delete this VPC..", fg='green')
-            exit()
-        vpcDownStatus = VPCController.down(db, tenantName, vpcName)
-        if vpcDownStatus:
-            click.secho(f"VPC is down, resources are undefined..", fg='green')
-            routerVMStatus = VMController.undefine(db, f"RVM_{tenantName}_{vpcName}")
+            click.secho("No Containers available for deletion", fg='red')
+            vpc_detail(vpc_id=vpc_id)
+            return 
+        container_name = click.prompt(click.style("Enter Container name", fg='yellow'), type=str)
+        if container_name not in conatiner_data:
+            click.secho("Invalid selection", fg='red')
+            vpc_detail(vpc_id=vpc_id)
+            return
+        cont = Container.find_by_name(db, container_name)
+        ContainerController.delete_container(db, vpc_id, cont.get_id())
+        vpc_detail(vpc_id=vpc_id)
+    elif choice == 7:
+        if loadbalancer_exists:
+            lbs = list(vpc.lbs.keys())
+            lb = LoadBalancer.find_by_id(db, vpc.lbs[lbs[0]])
+            click.secho(f" Name: {lb.name}", fg='cyan')
+            click.secho(f"  Public IP: {lb.lb_ip}", fg='cyan')
+            click.secho(f"  Target IPs", fg='cyan')
+            _txt = 'IaaS' if lb.type == LBType.IAAS else 'LBaaS'
+            click.secho(f"  LB Type: {_txt}", fg='cyan')
+            for ip in lb.target_group:
+                click.secho(f"IP: {ip['ip']}\t Weight: {ip['weight']}", fg='green')
+            if len(lb.target_group) == 0:
+                click.secho(f"    No target ips", fg='yellow')
+            vpc_detail(vpc_id=vpc_id, message=False)
         else:
-            click.secho(f"VPC is not down, failed", fg='red')
-        if routerVMStatus:
-            click.secho(f"Router VM is deleted..", fg='green')
-        else:
-            click.secho(f"Router VM failed to delete..", fg='red')
-    elif choice == 5:
-        console()
+            # Create lb
+            pub_sb = Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
+            ip = IPUtils.get_unique_ip_from_region(db, pub_sb.get_id(), 'east')
+            lb_name = click.prompt(click.style("Enter Load Balancer name", fg='yellow'), type=str)
+            click.secho(f"Select type of load balancer", fg='cyan')
+            click.secho(f"1. Load balancing through infrastructure", fg='green')
+            click.secho(f"2. Load balancing as a Service", fg='green')
+            lb_type = click.prompt(click.style("Enter Load Balancer name", fg='yellow'), type=int)
+            if lb_type == 1:
+                lb_type = LBType.IAAS
+            elif lb_type == 2:
+                lb_type = LBType.VM
+            else:
+                click.secho(f"Invalid option selected", fg='red')
+                vpc_detail(vpc_id=vpc_id)
+                return
+            ContainerController.create_load_balancer(db, tenant_id, vpc_id, lb_name, ip, lb_type)
+            vpc_detail(vpc_id=vpc_id)
+    elif choice == 8:
+        conf = click.prompt(click.style("Are you sure you want to delete the load balancer? (y/N)", fg='red'), type=str)
+        if conf != 'y':
+            click.secho(f"Deletion cancelled", fg='green')
+            vpc_detail(vpc_id=vpc_id)
+            return
+        lbs = list(vpc.lbs.keys())
+        lb = LoadBalancer.find_by_id(db, vpc.lbs[lbs[0]])
+        
+        ContainerController.delete_loadbalancer(db, tenant_id, vpc_id, lb.name)
+        vpc_detail(vpc_id=vpc_id)
+        
+    elif choice == 9:
+        _servers = db.container.find({"vpc_id": vpc_id,})
+        flag = True
+        for _server in _servers:
+            if flag: 
+                click.secho("Server details", fg='cyan')
+                flag = False
+            ser = Container.from_dict(_server)
+            ser.name 
+            
+            click.secho(f"    {ser.name}", fg='cyan')
+            for _int in ser.interfaces:
+                _ip = Interface.find_by_id(db, _int)
+                _sb = Subnet.find_by_id(db, _ip.subnet_id)
+                click.secho(f"        {_sb.network_name} - {_ip.ip_address}", fg='green')
+        if flag:
+            click.secho("No servers found", fg='red')
+        click.secho("Registered Ips", fg='cyan')
+        # add ips
+        lbs = list(vpc.lbs.keys())
+        lb = LoadBalancer.find_by_id(db, vpc.lbs[lbs[0]])
+        click.secho(f"Target IPs", fg='cyan')
+        _txt = "IaaS" if lb.type == LBType.IAAS else "LBaaS"
+        click.secho(f"LB Type: {_txt}", fg='cyan')
+        for ip in lb.target_group:
+            click.secho(f"IP: {ip.ip}\t Weight: {ip.weight}", fg='green')
+        ip_addresses = []
+        # ip_address, weight
+        while True:
+            ip_address = click.prompt(click.style("Enter ip address of server", fg='yellow'), type=str)
+            weight = click.prompt(click.style("Enter weight", fg='yellow'), type=int)
+            ip_addresses.append({"ip_address": ip_address, "weight": weight})
+            add_more = click.prompt(click.style("Add more (y/n)", fg='yellow'), type=str)
+            if add_more != 'y':
+                break
+        print(tenant_id, vpc_id, vpc.lbs[lbs[0]], ip_addresses)
+        lb = LoadBalancer.find_by_id(db, vpc.lbs[lbs[0]])
+        ContainerController.add_ip_targets(db, tenant_id, vpc_id, lb.name, ip_addresses)
+        vpc_detail(vpc_id=vpc_id)
+    elif choice == 10:
+        # delete ips
+        lbs = list(vpc.lbs.keys())
+        lb = LoadBalancer.find_by_id(db, vpc.lbs[lbs[0]])
+        click.secho(f"Target IPs", fg='cyan')
+        _txt = "IaaS" if lb.type == LBType.IAAS else "LBaaS"
+        click.secho(f"LB Type: {_txt}", fg='cyan')
+        for ip in lb.target_group:
+            click.secho(f"IP: {ip.ip}\t Weight: {ip.weight}", fg='green')
+        
+        ip_addresses = []
+        # ip_address, weight
+        while True:
+            ip_address = click.prompt(click.style("Enter ip address of server", fg='yellow'), type=str)
+            ip_addresses.append(ip_address)
+            add_more = click.prompt(click.style("Add more (y/n)", fg='yellow'), type=str)
+            if add_more != 'y':
+                break
+        ContainerController.remove_ip_tartgets(db, tenant_id, vpc_id, vpc.lbs[lbs[0]], ip_addresses)
+        vpc_detail(vpc_id=vpc_id)
+    elif choice == 11:
+        vpc_id = None
+        vpc_home()
     else:
-        click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
-        console()
-
-def loadbalancer():
-    display_welcome(title = pyfiglet.figlet_format("- Load Balancer Console -", font="digital"), message="Choose an action to continue:")
-    click.secho("1: List Load Balancers", fg='cyan')
-    click.secho("2: Create Load Balancer", fg='cyan')
-    click.secho("3: Delete Load Balancer", fg='cyan')
-    click.secho("4: Add target to Load Balancer", fg='cyan')
-    click.secho("5: Delete target to Load Balancer", fg='cyan')
-    click.secho("6: Main Console", fg='cyan')
-    
-    click.echo()
-    choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
-    
-    if choice == 1:
-        tenant:Tenant = Tenant.find_by_name(db, tenantName)
-        for vpc_id in tenant.vpcs:
-            vpc = VPC.find_by_id(db, vpc_id)
-            click.secho(f"VPC name: {vpc.name}", fg='green')
-            found = False
-            lb_info = db.loadbalancer.find({"vpc_id": vpc_id})
-            for lb_data in lb_info:
-                found = True
-                lb = LoadBalancer.from_dict(lb_data)
-                # lb = LoadBalancer.find_by_id(db, lb_id)
-                click.secho(f"Load balancer name: {lb.name}", fg='cyan')
-                if lb.target_group and len(lb.target_group) == 0:
-                    click.secho(f"No clients to the load balancer", fg='cyan')
-                else:
-                    click.secho(f"---", fg='cyan')
-                    click.secho(f"Target\t\t\tWeight", fg='cyan')
-                    targets_found = False
-                    for target in lb.target_group:
-                        targets_found = True
-                        click.secho(f"{target['ip']}\t\t{target['weight']}", fg='cyan')
-                    if not targets_found:
-                        click.secho(f"No targets found", fg='red')
-                        
-            if not found:
-                click.secho(f"No load balancers found", fg='red')
-                
-    elif choice == 2:
-        click.secho(f"Choose which vpc to add load balancer in", fg='cyan')
-        tenant:Tenant = Tenant.find_by_name(db, tenantName)
-        click.secho(f"VPCs\n--------", fg='cyan')
-        for vpc_id in tenant.vpcs:
-            vpc = VPC.find_by_id(db, vpc_id)
-            click.secho(f"{vpc.name}", fg='cyan')
-        vpc_name = click.prompt(click.style("Choose VPC \U0001F50D", fg='yellow'))
-        vpc = VPC.find_by_name(db, vpc_name)
-
-        if db.loadbalancer.find_one({"vpc_id": vpc.get_id()}):
-            click.secho(f"Load balancer already exists for the vpc", fg='red')
-
-        lb_name = click.prompt(click.style("Choose a name for your load balancer \U0001F50D", fg='yellow'))
-
-        lb_ip = VPCController.unique_public_ip(db)
-        print("Unique Ip", lb_ip)
-        VMController.create_load_balancer(db, vpc, vpc.routerVM, lb_name, lb_ip, LBType.IAAS)
-        VMController.undefine(db, vpc.routerVM)
-        VMController.start(db, vpc.routerVM)
-            
-    elif choice == 3:
-        click.secho(f"Choose which vpc to delete load balancer in", fg='cyan')
-        tenant:Tenant = Tenant.find_by_name(db, tenantName)
-        click.secho(f"VPCs\n--------", fg='cyan')
-        for vpc_id in tenant.vpcs:
-            vpc = VPC.find_by_id(db, vpc_id)
-            click.secho(f"{vpc.name}", fg='cyan')
-        vpc_name = click.prompt(click.style("Choose VPC \U0001F50D", fg='yellow'))
-        vpc = VPC.find_by_name(db, vpc_name)
-        
-        click.secho(f"Available load Balancers", fg='cyan')
-        load_balancers_found = False
-        for lb_data in db.loadbalancer.find({"vpc_id": vpc_id}):
-            print('Hello')
-            load_balancers_found = True
-            lb = LoadBalancer.from_dict(lb_data)
-            click.secho(f"{lb.name}", fg='cyan')
-        if not load_balancers_found:
-            click.secho(f"No load balancers", fg='red')
-            exit()
-            
-        lb_name = click.prompt(click.style("Choose a load balancer \U0001F50D", fg='yellow'))
-
-        VMController.rm_load_balancer(db, vpc, vpc.routerVM, lb_name)
-        VMController.undefine(db, vpc.routerVM)
-        VMController.start(db, vpc.routerVM)
-    elif choice == 4:
-        click.secho(f"Choose which vpc to modify load balancer rules", fg='cyan')
-        tenant:Tenant = Tenant.find_by_name(db, tenantName)
-        click.secho(f"VPCs\n--------", fg='cyan')
-        for vpc_id in tenant.vpcs:
-            vpc = VPC.find_by_id(db, vpc_id)
-            click.secho(f"{vpc.name}", fg='green')
-        vpc_name = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'))
-        vpc = VPC.find_by_name(db, vpc_name)
-        
-        click.secho(f"Available load Balancers", fg='cyan')
-        load_balancers_found = False
-        for lb_data in db.loadbalancer.find({"vpc_id": vpc._id}):
-            load_balancers_found = True
-            lb = LoadBalancer.from_dict(lb_data)
-            click.secho(f"{lb.name}", fg='cyan')
-        if not load_balancers_found:
-            click.secho(f"No load balancers", fg='red')
-            exit()
-            
-        click.secho(f"Choose a load balancer", fg='cyan')
-        lb_name = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'))
-        
-        ip_target = click.prompt(click.style("Set target ip address \U0001F50D", fg='yellow'))
-        # ip_target = ''
-        
-        weight = click.prompt(click.style("Set weight \U0001F50D", fg='yellow'))
-        
-        VMController.add_lb_ip_target(db, vpc.routerVM, lb_name, ip_target, weight)
-        VMController.undefine(db, vpc.routerVM)
-        VMController.start(db, vpc.routerVM)
-    elif choice == 5:
-        click.secho(f"Choose which vpc to modify load balancer rules", fg='cyan')
-        tenant:Tenant = Tenant.find_by_name(db, tenantName)
-        click.secho(f"VPCs\n--------", fg='cyan')
-        for vpc_id in tenant.vpcs:
-            vpc = VPC.find_by_id(db, vpc_id)
-            click.secho(f"{vpc.name}", fg='cyan')
-        vpc_name = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'))
-        vpc = VPC.find_by_name(db, vpc_name)
-        
-        click.secho(f"Available load Balancers", fg='cyan')
-        load_balancers_found = False
-        for lb_data in db.loadbalancer.find({"vpc_id": vpc._id}):
-            load_balancers_found = True
-            lb = LoadBalancer.from_dict(lb_data)
-            click.secho(f"{lb.name}", fg='cyan')
-            
-        # click.secho(f"Choose a load balancer", fg='cyan')
-        lb_name = click.prompt(click.style("Choose a load balancer \U0001F50D", fg='yellow'))
-        if lb.target_group and len(lb.target_group) == 0:
-            click.secho(f"No clients to the load balancer", fg='cyan')
-        else:
-            click.secho(f"---", fg='cyan')
-            click.secho(f"Target\t\t\tWeight", fg='cyan')
-            targets_found = False
-            for target in lb.target_group:
-                targets_found = True
-                click.secho(f"{target['ip']}\t\t{target['weight']}", fg='cyan')
-            if not targets_found:
-                click.secho(f"No targets found", fg='red')
-        
-        # lb_name = click.prompt(click.style("Choose \U0001F50D", fg='yellow'))
-        ip_target = click.prompt(click.style("Choose IP to delete", fg='yellow'))
-        
-        VMController.rm_lb_ip_target(db, vpc.routerVM, lb_name, ip_target)
-        VMController.undefine(db, vpc.routerVM)
-        VMController.start(db, vpc.routerVM)
-    elif choice == 6:
-        console()
-    else:
-        click.secho("Invalid choice. Please try again.. \U0000274C", fg='red')
-        console()
-
-def console():
-    click.echo("----------------------------------------------------")
-    command = click.prompt(click.style("Choose the console - vpc, vm, tenant, load-balancer, exit", fg='yellow'), type=str)
-    click.echo()
-    if command == "vpc":
-        vpc()
-    elif command == "vm":
-        vm()
-    elif command == "tenant":
-        tenant()
-    elif command == "load-balancer":
-        loadbalancer()
-    elif command == "exit":
-        click.secho("Good bye! \U0001F44B \U0001F44B", fg='green')
-        exit()
-    else:
-        click.secho("Invalid console chosen. Please try again.. \U0000274C", fg='red')
-        console()
-
+        click.secho(f"Invalid option selected", fg='red')
+        vpc_detail(message=False, vpc_id=vpc_id)
 if __name__ == "__main__":
     display_welcome()
     login()
-    console()
+    # console()

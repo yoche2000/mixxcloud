@@ -2,7 +2,8 @@ from typing import List
 from controllers.vpc_controller import VPCController
 from models.tenant_model import Tenant
 from bson.objectid import ObjectId
-from models.vpc_model import VPC
+from models.vpc_model import VPC, VPCStatus
+from controllers.container_controller import ContainerController
 
 class TenantController:
     # use
@@ -28,6 +29,27 @@ class TenantController:
             tenant.save(db)
         return vpc
     
+    @staticmethod
+    def delete_vpc(db, tenant: Tenant | str, vpc_id: str):
+        if isinstance(tenant, str):
+            tenant = Tenant.find_by_name(db, tenant)
+        _vpc = VPC.find_by_id(db, vpc_id)
+        try: 
+            _vpc.status = VPCStatus.DELETING
+            _vpc.save(db)
+            
+            if _vpc is not None:
+                ContainerController.delete_container(db, vpc_id, _vpc.container_east)
+                ContainerController.delete_container(db, vpc_id, _vpc.container_west)
+                
+            _vpc = VPC.find_by_id(db, vpc_id)
+            _vpc.status = VPCStatus.UNDEFINED
+            _vpc.save(db)
+        except:
+            _vpc = VPC.find_by_id(db, vpc_id)
+            _vpc.status = VPCStatus.ERROR
+            _vpc.save(db)
+            
     @staticmethod
     def list_vpcs(db, tenant: Tenant | str) -> List[VPC]:
         if isinstance(tenant, str):

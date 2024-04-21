@@ -73,7 +73,7 @@ def main():
     infra_sb = Subnet.find_by_name(db, HOST_NAT_NETWORK)
     if not infra_sb:
         print(f"Creating {HOST_NAT_NETWORK}")
-        infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME, 1, SubnetStatus.RUNNING.name).save(db)
+        infra_sb = Subnet(HOST_NAT_SUBNET, HOST_NAT_NETWORK, HOST_NAT_BR_NAME, 1, None, SubnetStatus.RUNNING.name).save(db)
     
     # # if infra_sb.status != SubnetStatus.RUNNING and infra_sb.status != SubnetStatus.ERROR:
     # #     print(f"Defining {HOST_NAT_NETWORK}")
@@ -83,7 +83,7 @@ def main():
     public_sb =  Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
     if not public_sb:
         print(f"Creating {HOST_PUBLIC_NETWORK}")
-        public_sb = Subnet(HOST_PUBLIC_SUBNET, HOST_PUBLIC_NETWORK, HOST_PUBLIC_BR_NAME, 2, SubnetStatus.RUNNING.name).save(db)
+        public_sb = Subnet(HOST_PUBLIC_SUBNET, HOST_PUBLIC_NETWORK, HOST_PUBLIC_BR_NAME, 2, None,  SubnetStatus.RUNNING.name).save(db)
     
 
     # if public_sb.status != SubnetStatus.RUNNING and public_sb.status != SubnetStatus.ERROR:
@@ -199,20 +199,20 @@ def main():
     
     
     # tnt = Tenant('TC')
-    tnt = Tenant.find_by_name(db, 'TB')
-    tnt.save(db)
+    # tnt = Tenant.find_by_name(db, 'TB')
+    # tnt.save(db)
     
-    # vpc1 = TenantController.create_vpc(db, tnt, 'CE')
-    vpc1 = VPC.find_by_name(db, 'CE')
+    # # vpc1 = TenantController.create_vpc(db, tnt, 'CE')
+    # vpc1 = VPC.find_by_name(db, 'CE')
     
-    # sb = Subnet.find_by_name(db, 'TCCDSD')
+    # # sb = Subnet.find_by_name(db, 'TCCDSD')
     
-    sb = ContainerController.create_subnet_in_container(db, vpc1.get_id(), 'SE', '192.168.40.0/24')
-    # sb = Subnet.find_by_name(db, 'T11C1SB1')
-    # print(sb.bridge_name)
+    # sb = ContainerController.create_subnet_in_container(db, vpc1.get_id(), 'SE', '192.168.40.0/24')
+    # # sb = Subnet.find_by_name(db, 'T11C1SB1')
+    # # print(sb.bridge_name)
     
-    server1 = Container('TEST7', 'zecaro/php-info:latest', 'west', '1', '1024').save(db)
-    server2 = Container('TEST8', 'zecaro/php-info:latest', 'east', '1', '1024').save(db)
+    # server1 = Container('TEST7', 'zecaro/php-info:latest', 'west', '1', '1024').save(db)
+    # server2 = Container('TEST8', 'zecaro/php-info:latest', 'east', '1', '1024').save(db)
     
     # server1 = Container.find_by_name(db, 'TEST3')
     # server2 = Container.find_by_name(db, 'TEST4')
@@ -236,7 +236,7 @@ def main():
     # ContainerController.add_ip_targets(db, None, vpc1.get_id(), 'app1', targets)
     # ContainerController.delete_ip_rules(db, None, vpc1.get_id(), 'lb_name')
     # ContainerController.create_lb_rules(db, None, vpc1.get_id(), 'lb_name')
-    ContainerController.delete_loadbalancer(db, None, vpc1.get_id(), 'app1')
+    # ContainerController.delete_loadbalancer(db, None, vpc1.get_id(), 'app1')
     # ContainerController.delete_container(db, None, server1.get_id())
     # ContainerController.delete_container(db, None, server2.get_id())
     
