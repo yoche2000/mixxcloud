@@ -8,12 +8,12 @@
   tasks:
     #create vpc container
     - name: Create VPC/LoadBalancer Container
-      command: "docker run -d --name {{ container_name }} -h {{ container_name }} {{ container_image }}"
+      command: "docker run -d --name {{ container_name }} -h {{ container_name }} --network none {{ container_image }}"
       become: yes
       when: vcpu is not defined and mem is not defined
 
     - name: Create VM Container
-      command: "docker run -d --name {{ container_name }} -h {{ container_name }} -m {{ mem }} --cpus {{ vcpu }} {{ container_image }}"
+      command: "docker run -d --name {{ container_name }} -h {{ container_name }} -m {{ mem }} --cpus {{ vcpu }} --network none {{ container_image }}"
       become: yes
       when: vcpu is defined and mem is defined
 

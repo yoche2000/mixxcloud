@@ -138,8 +138,8 @@ class VPCController:
             
             sb = Subnet.find_by_name(db, HOST_NAT_NETWORK)
             
-            container_east = Container(name, 'vpcrouter', 'east', '1', '1024',).save(db)
-            container_west = Container(name, 'vpcrouter', 'west', '1', '1024',).save(db)
+            container_east = Container(name, 'vpcrouter', 'east', None, None).save(db)
+            container_west = Container(name, 'vpcrouter', 'west', None, None).save(db)
             
             ContainerController.create(db, container_east.get_id())
             ContainerController.create(db, container_west.get_id())

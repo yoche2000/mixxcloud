@@ -26,9 +26,9 @@ class ContainerController():
             container_name = cont.name
             container_image = cont.image
             region = cont.region
-            vcpu = cont.vCPU
-            mem = cont.mem
-            Container_CRUD_Workflows.run_ansible_playbook_for_container_creation(container_name, container_image, REGION_MAPPING[region], vcpu=vcpu, mem=mem)
+            # vcpu = cont.vCPU
+            # mem = cont.mem
+            Container_CRUD_Workflows.run_ansible_playbook_for_container_creation(container_name, container_image, REGION_MAPPING[region])
             cont.status = ContainerStatus.RUNNING
             cont.save(db)
             return True
