@@ -1,9 +1,9 @@
 ---
-- name: Create Firewall Rules
+- name: Create Firewall - Rate Limit Rules
   hosts: all
   become: yes
   vars_files:
-    - vars/firewall-vars.yml
+    - vars/fw-ratelimit-vars.yml
     
   tasks:
     - name: Check if the network namespace exists

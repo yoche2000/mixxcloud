@@ -1,4 +1,4 @@
-container_name: KZVPC
+container_name: LBCG
 rules:
-- iptables -A INPUT -p tcp -m state --state NEW -m recent -i KZVPCpubinf --update
-  --seconds 120 --hitcount 2000 -j DROP
+- iptables -A INPUT -p tcp -m state --state NEW -m recent -i LBCGpubinf --update --seconds
+  120 --hitcount 10 -j DROP
