@@ -1,2 +1,2 @@
-container_name: H4
+container_name: G2
 container_image: zecaro/php-info

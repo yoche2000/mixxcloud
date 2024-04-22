@@ -1,2 +1,2 @@
-container_name: LBCG
-target_ips: 192.168.42.3 192.168.42.4
+container_name: LBV1
+target_ips: 192.168.30.3 192.168.30.4 192.168.30.6

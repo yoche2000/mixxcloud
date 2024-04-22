@@ -1,22 +1,28 @@
 ---
-T2:
-  V2:
+T3:
+  V1:
     lb: 
-      name: app
-      type: IAAS
+      name: LBV1
+      type: VM
     subnets: 
-    - name: S2
+    - name: S1
       cidr: 192.168.30.0/24
       servers:
-      - name: H3
+      - name: SH1
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m
         region: east
         weight: 1
-      - name: H4
+      - name: SH2
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m
-        region: east
+        region: west
+        weight: 1
+      - name: SH3
+        image: zecaro/php-info
+        vcpu: 1
+        mem: 1024m
+        region: west
         weight: 1

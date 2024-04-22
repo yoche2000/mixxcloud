@@ -1,4 +1,4 @@
-container_name: LBCG
+container_name: LBV1
 rules:
-- iptables -A INPUT -p tcp -m state --state NEW -m recent -i LBCGpubinf --update --seconds
+- iptables -A INPUT -p tcp -m state --state NEW -m recent -i LBV1pubinf --update --seconds
   120 --hitcount 10 -j DROP

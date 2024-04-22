@@ -137,9 +137,10 @@ def lb_home(message = True, choice = None):
                 click.secho(f"IP: {ip['ip']}\t Weight: {ip['weight']}", fg='green')
             if len(lb.target_group) == 0:
                 click.secho(f"    No target ips", fg='yellow')
-    if len(vpc_data) != 0:
+    if len(tenant.vpcs) != 0:
         click.secho("1: Configure Health Checks", fg='cyan')
         click.secho("2: Configure Security: Black List IPs", fg='cyan')
+        click.secho("3: Configure Security: Rate Limit Settings", fg='cyan')
         click.secho("9: Exit", fg='cyan')
         choice = click.prompt(click.style("Please enter your choice", fg='yellow'), type=int)
 
@@ -269,6 +270,12 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
         subnets_data[sb.network_name] = sb_id
     
     if message:
+        if len(subnets_data) > 0:
+            click.secho("Available Subnets", fg='cyan')
+            for _nw_name, _sb_id in subnets_data.items():
+                _sb = Subnet.find_by_id(db, _sb_id)
+                # subnets_data[sb.network_name] = sb_id
+                click.secho(f"    {_nw_name}\t\t{_sb.cidr}", fg='green')
         click.secho("1: List Subnets", fg='cyan')
         click.secho("2: List Servers", fg='cyan')
         click.secho("3: Create Subnet", fg='cyan')
@@ -457,7 +464,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
         _txt = "IaaS" if lb.type == LBType.IAAS else "LBaaS"
         click.secho(f"LB Type: {_txt}", fg='cyan')
         for ip in lb.target_group:
-            click.secho(f"IP: {ip.ip}\t Weight: {ip.weight}", fg='green')
+            click.secho(f"IP: {ip['ip']}\t Weight: {ip['weight']}", fg='green')
         ip_addresses = []
         # ip_address, weight
         while True:

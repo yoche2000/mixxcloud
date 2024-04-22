@@ -18,9 +18,12 @@ class healthCheckWorkflow:
         try:
             print(f"Health Check on {container_name} has been triggered..")
             healthCheckConfiguration.createHealthCheckVarsFiles(container_name, target_ips)
-            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "ansible/start_healthcheck.yml"]
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/start_healthcheck.yml"]
             if region is not None:
-                command.extend(['-l', region])
+                if region == "east":
+                    command.extend(['-l', 'odd'])
+                else:
+                    command.extend(['-l', 'even'])
             Commands.run_command(command)
         except Exception as error:
             print(f"Failure in Health Check Creation. More details: {error}")
@@ -32,9 +35,12 @@ class securityWorkflow:
         try:
             print(f"Black List on {container_name} for Source IP: {sourceIP} has been triggered..")
             securityConfiguration.createBlackListVarsFile(container_name, sourceIP)
-            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "ansible/create_rules_fw_blacklist.yml"]
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_rules_fw_blacklist.yml"]
             if region is not None:
-                command.extend(['-l', region])
+                if region == "east":
+                    command.extend(['-l', 'odd'])
+                else:
+                    command.extend(['-l', 'even'])
             Commands.run_command(command)
         except Exception as error:
             print(f"Failure in Applying Black List Rules. More details: {error}")
@@ -46,9 +52,12 @@ class securityWorkflow:
         try:
             print(f"Ratelimit on {container_name} for Secure: {secureLevel} has been triggered..")
             securityConfiguration.createRateLimitVarsFiles(container_name, secureLevel)
-            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "ansible/create_rules_fw_ratelimit.yml"]
+            command = ["ansible-playbook", "-i", "ansible/inventory/hosts.ini", "Container_automation/ansible/create_rules_fw_ratelimit.yml"]
             if region is not None:
-                command.extend(['-l', region])
+                if region == "east":
+                    command.extend(['-l', 'odd'])
+                else:
+                    command.extend(['-l', 'even'])
             Commands.run_command(command)
         except Exception as error:
             print(f"Failure in Rate Limit Rules. More details: {error}")
