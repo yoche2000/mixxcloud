@@ -22,6 +22,9 @@ import traceback
 from bson.objectid import ObjectId
 from utils.ip_utils import IPUtils
 from constants.infra_constants import HOST_PUBLIC_NETWORK
+from Container_automation.ansible import logger
+from Container_automation.otherworkflows import healthCheckWorkflow, securityWorkflow
+
 # sudo apt-get install -y python3-pyfiglet
 # Usage from main.py: sudo python3 main.py
 # Usage from console.py: sudo python3 console.py
@@ -56,6 +59,7 @@ def login(message = True, choice = None):
         if not tenant:
             tenant = Tenant(tenantName).save(db)
             message = "\nTenant is created successfully!!"
+            logger.log_api_call(tenantName,"CreateTenant")
             click.secho(message, fg='green') 
             tenant_id = tenant.get_id()
             home()
@@ -75,6 +79,7 @@ def login(message = True, choice = None):
             click.secho("Try again, enter 'exit' to leave prompt", fg="yellow")
             login(message=False, choice=choice)
         tenant_id = tenant.get_id()
+        logger.log_api_call(tenantName,"AccessTenantConsole")
         click.secho('\n')
         home()
     elif choice == 3:
@@ -95,13 +100,15 @@ def home():
     global tenant_id
     click.secho("1: List Resources", fg='cyan')
     click.secho("2: VPC", fg='cyan')
-    click.secho("3: Servers", fg='cyan')
+    click.secho("3. Load Balancer", fg='cyan')
     click.secho("9: Log out", fg='cyan')
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
     if choice == 1:
         pass
     elif choice == 2:
         vpc_home()
+    elif choice == 3:
+        lb_home()
     elif choice == 9:
         tenant_id = None
         login()
@@ -110,10 +117,64 @@ def home():
         click.secho("Invalid Choice selected", fg='red')
         home()
 
+def lb_home(message = True, choice = None):
+    global tenant_id
+    tenant = Tenant.find_by_id(db, tenant_id)
+    logger.log_api_call(tenant.name,"AccessLoadBalancerConsole")
+    vpc_data = {}
+
+    click.secho(f"Available VPC & LBs:", fg='cyan')
+    for vpcid in tenant.vpcs:
+        vpc = VPC.find_by_id(db, vpcid)
+        click.secho(f"VPC Name: {vpc.name}", fg='green')
+        loadbalancer_exists = True if vpc.lbs else False
+        if loadbalancer_exists:
+            lbs = list(vpc.lbs.keys())
+            lb = LoadBalancer.find_by_id(db, vpc.lbs[lbs[0]])
+            _txt = 'IaaS' if lb.type == LBType.IAAS else 'LBaaS'
+            click.secho(f"  LB Type: {_txt}", fg='cyan')
+            for ip in lb.target_group:
+                click.secho(f"IP: {ip['ip']}\t Weight: {ip['weight']}", fg='green')
+            if len(lb.target_group) == 0:
+                click.secho(f"    No target ips", fg='yellow')
+    if len(vpc_data) != 0:
+        click.secho("1: Configure Health Checks", fg='cyan')
+        click.secho("2: Configure Security: Black List IPs", fg='cyan')
+        click.secho("9: Exit", fg='cyan')
+        choice = click.prompt(click.style("Please enter your choice", fg='yellow'), type=int)
+
+        if choice == 1:
+            lb_name = click.prompt(click.style("Name of the LB To Configure Health Checks:", fg='yellow'), type=str)
+            targetIps = click.prompt(click.style("Provide Target IPs (Space Separated):", fg='yellow'), type=str)
+            region = click.prompt(click.style("Region: (east/west)", fg='yellow'), type=str)
+            logger.log_api_call(tenant.name,f"ConfigureHealthCheck - [LB Name: {lb_name}, TargetIps: {targetIps}, Region: {region}]")
+            healthCheckWorkflow.run_ansible_playbook_to_start_healthcheck(lb_name, targetIps, region)
+        elif choice == 2:
+            lb_name = click.prompt(click.style("Name of the LB To Blacklist IPs:", fg='yellow'), type=str)
+            blacklistIp = click.prompt(click.style("Provide the IP to Black List:", fg='yellow'), type=str)
+            region = click.prompt(click.style("Region: (east/west)", fg='yellow'), type=str)
+            logger.log_api_call(tenant.name,f"ConfigureBlackListRules - [LB Name: {lb_name}, Source Black List IP: {blacklistIp}, Region: {region}]")
+            securityWorkflow.run_ansible_playbook_to_apply_blacklist_rules(lb_name, blacklistIp, region)
+        elif choice == 3:
+            lb_name = click.prompt(click.style("Name of the LB To Add Rate Limit Feature:", fg='yellow'), type=str)
+            secureLevel = click.prompt(click.style("Provide the Security Level (HIGH/MODERATE/LOW):", fg='yellow'), type=str)
+            region = click.prompt(click.style("Region: (east/west)", fg='yellow'), type=str)
+            logger.log_api_call(tenant.name,f"ConfigureRateLimitRules - [LB Name: {lb_name}, Secure Limit: {secureLevel}, Region: {region}]")
+            securityWorkflow.run_ansible_playbook_to_apply_ratelimit_rules(lb_name, secureLevel, region)
+        elif choice == 9:
+            click.secho("Good bye! \U0001F44B \U0001F44B", fg='green')
+            exit()
+        else:
+            click.secho(f"Invalid option selected", fg='red')
+            lb_home(message=False, vpc_id=vpc.get_id())
+    else:
+        click.secho(f"No VPCs available", fg='yellow')
+
 def vpc_home(message = True, choice = None):
     global tenant_id
     # global vpc_id
     tenant = Tenant.find_by_id(db, tenant_id)
+    logger.log_api_call(tenant.name,"AccessVPCConsole")
     vpc_data = {}
     
     for vpcid in tenant.vpcs:
@@ -137,6 +198,7 @@ def vpc_home(message = True, choice = None):
         # Create VPC Here
         # VPCController.create_subnet_in_container(db, )
         vpc_name = click.prompt(click.style("Enter VPC Name", fg='yellow'), type=str)
+        logger.log_api_call(tenant.name,f"CreateVPC - [VPC Name:{vpc_name}]")
         if vpc_name == 'exit':
             vpc_home()
         tenant = Tenant.find_by_id(db, tenant_id)
@@ -149,6 +211,7 @@ def vpc_home(message = True, choice = None):
             TenantController.create_vpc(db, tenant, vpc_name)
             vpc_home()
     elif choice == 2:
+        logger.log_api_call(tenant.name,"ListVPC")
         if len(vpc_data) != 0:
             click.secho(f"Available VPCs", fg='cyan')    
             for vpc_name in vpc_data:
@@ -158,6 +221,7 @@ def vpc_home(message = True, choice = None):
         vpc_home(message=False)
     elif choice == 3:
         vpc_name = click.prompt(click.style("Enter VPC Name", fg='yellow'), type=str)
+        logger.log_api_call(tenant.name,f"DescribeVPC - [VPC Name:{vpc_name}]")
         if vpc_name == 'exit':
             vpc_home()
         vpc_id = vpc_data.get(vpc_name, None)
@@ -171,6 +235,7 @@ def vpc_home(message = True, choice = None):
             vpc_detail(vpc_id = vpc_id)
     elif choice == 4:
         vpc_name = click.prompt(click.style("Enter VPC Name", fg='yellow'), type=str)
+        logger.log_api_call(tenant.name,f"DeleteVPC - [VPC Name:{vpc_name}]")
         if vpc_name not in vpc_data:
             click.secho("VPC not found", fg='cyan')
         tenant = Tenant.find_by_id(db, tenant_id)
@@ -184,6 +249,9 @@ def vpc_home(message = True, choice = None):
         vpc_home(message = False)
         
 def vpc_detail(message=True, choice=None, vpc_id = None):
+    global tenant_id
+    # global vpc_id
+    tenant = Tenant.find_by_id(db, tenant_id)
     # global vpc_id
     def check_overlap(cidr):
         nw = ip_network(cidr)
@@ -220,6 +288,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
     if choice is None:
         choice = click.prompt(click.style("Please enter your choice", fg='yellow'), type=int)
     if choice == 1:
+        logger.log_api_call(tenant.name,"ListSubnets")
         if len(subnets_data) > 0:
             click.secho("Subnets Details", fg='cyan')
             for _nw_name, _sb_id in subnets_data.items():
@@ -230,6 +299,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
             click.secho("No subnets found", fg='red')
         vpc_detail(message=False, vpc_id=vpc_id)
     elif choice == 2:
+        logger.log_api_call(tenant.name,"ListInstances")
         _servers = db.container.find({"vpc_id": vpc_id})
         flag = True
         for _server in _servers:
@@ -251,6 +321,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
     elif choice == 3:
         print("vpc_id", vpc_id)
         subnet_name = click.prompt(click.style("Enter Subnet name", fg='yellow'), type=str)
+        logger.log_api_call(tenant.name,f"CreateSubnet - [Subnet name:{subnet_name}]")
         cidr = click.prompt(click.style("Enter CIDR", fg='yellow'), type=str)
         try:
             check_overlap(cidr)
@@ -269,6 +340,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
     elif choice == 4:
         # Display available subnets
         subnet_name = click.prompt(click.style("Enter Subnet name", fg='yellow'), type=str)
+        logger.log_api_call(tenant.name,f"DeleteSubnet - [Delete Subnet:{subnet_name}]")
         VPCController.delete_subnet_in_container(db, vpc_id, subnet_name)
         vpc_detail(vpc_id=vpc_id)
     elif choice == 5:
@@ -277,6 +349,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
             click.secho("Subnet not found, exiting...", fg='red')
             vpc_detail(vpc_id=vpc_id)
         container_name = click.prompt(click.style("Enter Container name", fg='yellow'), type=str)
+        logger.log_api_call(tenant.name,f"CreateInstance - [Create Instance:{container_name}]")
         container_image = click.prompt(click.style("Enter docker image", fg='yellow'), type=str)
         click.secho("Avaiable Regions:", fg='cyan')
         click.secho("east", fg='green')
@@ -290,7 +363,6 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
         ContainerController.connect_to_network(db, cont.get_id(), subnets_data[subnet_name], default_route)
         vpc_detail(vpc_id=vpc_id)
     elif choice == 6:
-        # List all containers
         conatiner_data = {}
         containers = db.container.find({'vpc_id': vpc_id})
         for _c in containers:
@@ -305,6 +377,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
             vpc_detail(vpc_id=vpc_id)
             return 
         container_name = click.prompt(click.style("Enter Container name", fg='yellow'), type=str)
+        logger.log_api_call(tenant.name,f"DeleteInstance - [Delete Instance:{container_name}]")
         if container_name not in conatiner_data:
             click.secho("Invalid selection", fg='red')
             vpc_detail(vpc_id=vpc_id)
@@ -313,6 +386,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
         ContainerController.delete_container(db, vpc_id, cont.get_id())
         vpc_detail(vpc_id=vpc_id)
     elif choice == 7:
+        logger.log_api_call(tenant.name,"DescribeLoadBalancer")
         if loadbalancer_exists:
             lbs = list(vpc.lbs.keys())
             lb = LoadBalancer.find_by_id(db, vpc.lbs[lbs[0]])
@@ -331,6 +405,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
             pub_sb = Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
             ip = IPUtils.get_unique_ip_from_region(db, pub_sb.get_id(), 'east')
             lb_name = click.prompt(click.style("Enter Load Balancer name", fg='yellow'), type=str)
+            logger.log_api_call(tenant.name,f"CreateLoadBalancer - [Create Load Balancer:{lb_name}]")
             click.secho(f"Select type of load balancer", fg='cyan')
             click.secho(f"1. Load balancing through infrastructure", fg='green')
             click.secho(f"2. Load balancing as a Service", fg='green')
@@ -353,7 +428,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
             return
         lbs = list(vpc.lbs.keys())
         lb = LoadBalancer.find_by_id(db, vpc.lbs[lbs[0]])
-        
+        logger.log_api_call(tenant.name,f"DeleteLoadBalancer - [Delete Load Balancer:{lb.name}]")
         ContainerController.delete_loadbalancer(db, tenant_id, vpc_id, lb.name)
         vpc_detail(vpc_id=vpc_id)
         
@@ -394,6 +469,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
                 break
         print(tenant_id, vpc_id, vpc.lbs[lbs[0]], ip_addresses)
         lb = LoadBalancer.find_by_id(db, vpc.lbs[lbs[0]])
+        logger.log_api_call(tenant.name,f"AddTargetIPs - [Add Target IPs:{ip_addresses}]")
         ContainerController.add_ip_targets(db, tenant_id, vpc_id, lb.name, ip_addresses)
         vpc_detail(vpc_id=vpc_id)
     elif choice == 10:
@@ -414,6 +490,7 @@ def vpc_detail(message=True, choice=None, vpc_id = None):
             add_more = click.prompt(click.style("Add more (y/n)", fg='yellow'), type=str)
             if add_more != 'y':
                 break
+        logger.log_api_call(tenant.name,f"DeleteTargetIPs - [Delete Target IPs:{ip_addresses}]")
         ContainerController.remove_ip_tartgets(db, tenant_id, vpc_id, vpc.lbs[lbs[0]], ip_addresses)
         vpc_detail(vpc_id=vpc_id)
     elif choice == 11:

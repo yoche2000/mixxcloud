@@ -1,8 +1,6 @@
-container_name: KVPC
-lb_ip: 10.10.10.12
-#lb_snat_ip: 10.2.3.8 saas
-#lb_snat_ip: 10.2.3.2 iaas
-tenantIps : {
-    "10.2.3.4": "0.5", 
-    "10.2.3.6": "1"
-    }
+container_name: T2V2
+lb_ip: 10.10.10.5
+lb_snat_ip: 192.168.30.2
+tenantIps:
+  192.168.30.3: 0.5
+  192.168.30.5: 1.0

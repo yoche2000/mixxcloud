@@ -22,5 +22,5 @@ def log_api_call(tenant_name, api_call):
     logger.info(f'API Call: {api_call}')
 
 # Usage - # Import the log_api_call into the caller functions.
-log_api_call('TenantA', f'CreateBridge')
+# log_api_call('TenantA', f'CreateBridge')
 

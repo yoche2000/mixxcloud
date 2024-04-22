@@ -1,4 +1,4 @@
-from utils.otherUtils import healthCheckConfiguration, securityConfiguration
+from Container_automation.utils.otherUtils import healthCheckConfiguration, securityConfiguration
 import yaml
 import subprocess
 import json

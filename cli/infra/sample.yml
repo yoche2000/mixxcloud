@@ -1,20 +1,20 @@
 ---
-YB:
-  VE:
+T2:
+  V2:
     lb: 
       name: app
       type: IAAS
     subnets: 
-    - name: S4
-      cidr: 192.168.45.0/24
+    - name: S2
+      cidr: 192.168.30.0/24
       servers:
-      - name: H7
+      - name: H3
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m
         region: east
         weight: 1
-      - name: H8
+      - name: H4
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m

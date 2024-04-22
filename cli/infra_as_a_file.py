@@ -6,6 +6,7 @@ from utils.ip_utils import IPUtils
 from controllers.tenant_controller import TenantController
 from controllers.vpc_controller import VPCController
 from controllers.container_controller import ContainerController
+from Container_automation.ansible import logger
 
 from models.tenant_model import Tenant
 from models.vpc_model import VPC
@@ -36,6 +37,7 @@ def create_infra(file_name):
     for tenant_name, infra_data in data.items():
         _tenant = Tenant.find_by_name(db, tenant_name)
         if _tenant is None:
+            logger.log_api_call(tenant_name,"CreateTenant")
             _tenant = Tenant(tenant_name).save(db)
         for vpc_name, vpc_data in infra_data.items():
             _vpc = None
@@ -45,6 +47,7 @@ def create_infra(file_name):
                     _vpc = __vpc
                     break
             if _vpc is None:
+                logger.log_api_call(tenant_name,f"CreateVPC - [VPC Name:{vpc_name}]")
                 _vpc = TenantController.create_vpc(db, _tenant, vpc_name)
             
             lb_app_name = vpc_data['lb']['name']
@@ -63,6 +66,7 @@ def create_infra(file_name):
                 subnets.append({"name": sb_name, "cidr": sb_cidr})
                 _subnet = Subnet.find_by_name(db, f"{tenant_name}{vpc_name}{sb_name}")
                 if _subnet is None:
+                    logger.log_api_call(tenant_name,f"CreateSubnet - [Subnet name:{sb_name}]")
                     _subnet = VPCController.create_subnet_in_container(db, _vpc.get_id(), sb_name, sb_cidr)
                 
                 print_rows.append("Containers data")
@@ -79,6 +83,7 @@ def create_infra(file_name):
                     if _cont is None:
                         _cont = Container(name, image, region, vcpu, mem).save(db)
                         default_route = IPUtils.get_default_subnet_gateway(db, _subnet.get_id(), _cont.region)
+                        logger.log_api_call(tenant_name,f"CreateInstance - [Create Instance:{name}]")
                         ContainerController.create(db, _cont.get_id())
                         ContainerController.connect_to_network(db, _cont.get_id(), _subnet.get_id(), default_route)
                         _cont = Container.find_by_id(db, _cont.get_id())
@@ -90,13 +95,16 @@ def create_infra(file_name):
             if not _vpc.lbs:
                 pub_sb = Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
                 lb_ip = IPUtils.get_unique_ip_from_region(db, pub_sb.get_id(), 'east')
+                logger.log_api_call(tenant_name,f"CreateLoadBalancer - [Create Load Balancer:{lb_app_name}]")
                 ContainerController.create_load_balancer(db, _tenant.get_id(), _vpc.get_id(), lb_app_name, lb_ip, LBType[lb_type])
             
             print_rows.append("\nLoad name - Public IP")
             
+            _vpc = VPC.find_by_id(db, _vpc.get_id())
             lb = LoadBalancer.find_by_id(db, _vpc.lbs[lb_app_name])
             
             _vpc = VPC.find_by_id(db, _vpc.get_id())
+            logger.log_api_call(tenant_name,f"AddTargetIPs - [Add Target IPs:{_lb_ips}]")
             ContainerController.add_ip_targets(db,  _tenant.get_id(), _vpc.get_id(), lb_app_name, _lb_ips)
             
             print_rows.append(f"{lb.name} - {lb.lb_ip}")
