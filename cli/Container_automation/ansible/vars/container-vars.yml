@@ -1,2 +1,2 @@
-container_name: G2
-container_image: zecaro/php-info
+container_name: LBV2
+container_image: vpcrouter

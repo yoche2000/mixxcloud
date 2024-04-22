@@ -1,5 +1,3 @@
-container_name: G2
-bridge_name: T8V1S1
+container_name: LBV2
+bridge_name: pub
 nat: false
-ip_address: 192.168.3.3/24
-default_ip: 192.168.3.1

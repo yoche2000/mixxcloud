@@ -1,26 +1,26 @@
 ---
-T4:
-  V1:
+T7:
+  V2:
     lb: 
-      name: LBV1
+      name: LBV2
       type: VM
     subnets: 
     - name: S1
       cidr: 192.168.30.0/24
       servers:
-      - name: KH1
+      - name: DH1
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m
         region: east
         weight: 1
-      - name: KH2
+      - name: DH2
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m
         region: west
         weight: 1
-      - name: KH3
+      - name: DH3
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m

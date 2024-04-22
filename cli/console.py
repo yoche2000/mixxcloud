@@ -50,7 +50,8 @@ def login(message = True, choice = None):
     if message:
         click.secho("1: Create New User", fg='cyan')
         click.secho("2: Login to Existing Account", fg='cyan')
-        click.secho("3: Exit", fg='cyan')
+        click.secho("3. Run Code as  Infrastructure-in-one-File.", fg='cyan')
+        click.secho("4: Exit", fg='cyan')
         choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
     if choice == 1:
         tenantName = click.prompt(click.style("Please enter the tenant name", fg='yellow'), type=str)
@@ -84,6 +85,10 @@ def login(message = True, choice = None):
         click.secho('\n')
         home()
     elif choice == 3:
+        file_path = click.prompt(click.style("Enter the path to your I2OF: (Ex: infra/sample.yml)", fg='yellow'), type=str)
+        infra_as_a_file.create_infra(file_path)
+        login()
+    elif choice == 4:
         click.secho("Good bye! \U0001F44B \U0001F44B", fg='green')
         exit()
     else:
@@ -102,7 +107,6 @@ def home():
     click.secho("1: List Resources", fg='cyan')
     click.secho("2: VPC", fg='cyan')
     click.secho("3. Load Balancer", fg='cyan')
-    click.secho("4. Run Code as  Infrastructure-in-one-File.", fg='cyan')
     click.secho("9: Log out", fg='cyan')
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
     if choice == 1:
@@ -111,9 +115,6 @@ def home():
         vpc_home()
     elif choice == 3:
         lb_home()
-    elif choice == 4:
-        file_path = click.prompt(click.style("Enter the path to your I2OF: (Ex: infra/sample.yml)", fg='yellow'), type=str)
-        infra_as_a_file.create_infra(file_path)
     elif choice == 9:
         tenant_id = None
         login()
