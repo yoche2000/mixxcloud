@@ -1,5 +1,5 @@
 ---
-T3:
+T4:
   V1:
     lb: 
       name: LBV1
@@ -8,19 +8,19 @@ T3:
     - name: S1
       cidr: 192.168.30.0/24
       servers:
-      - name: SH1
+      - name: KH1
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m
         region: east
         weight: 1
-      - name: SH2
+      - name: KH2
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m
         region: west
         weight: 1
-      - name: SH3
+      - name: KH3
         image: zecaro/php-info
         vcpu: 1
         mem: 1024m

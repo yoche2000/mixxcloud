@@ -24,6 +24,7 @@ from utils.ip_utils import IPUtils
 from constants.infra_constants import HOST_PUBLIC_NETWORK
 from Container_automation.ansible import logger
 from Container_automation.otherworkflows import healthCheckWorkflow, securityWorkflow
+import infra_as_a_file
 
 # sudo apt-get install -y python3-pyfiglet
 # Usage from main.py: sudo python3 main.py
@@ -101,6 +102,7 @@ def home():
     click.secho("1: List Resources", fg='cyan')
     click.secho("2: VPC", fg='cyan')
     click.secho("3. Load Balancer", fg='cyan')
+    click.secho("4. Run Code as  Infrastructure-in-one-File.", fg='cyan')
     click.secho("9: Log out", fg='cyan')
     choice = click.prompt(click.style("Please enter your choice \U0001F50D", fg='yellow'), type=int)
     if choice == 1:
@@ -109,6 +111,9 @@ def home():
         vpc_home()
     elif choice == 3:
         lb_home()
+    elif choice == 4:
+        file_path = click.prompt(click.style("Enter the path to your I2OF: (Ex: infra/sample.yml)", fg='yellow'), type=str)
+        infra_as_a_file.create_infra(file_path)
     elif choice == 9:
         tenant_id = None
         login()

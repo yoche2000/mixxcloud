@@ -1,0 +1,7 @@
+ tenant: T5
+ VPC: V1
+ Subnet: S1
+ CIDR: 192.168.5.0/24
+ DH1:1,1024,east
+ DH2:1,1024,east
+ DH3:1,1024,west
