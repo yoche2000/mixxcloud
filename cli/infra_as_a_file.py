@@ -70,26 +70,27 @@ def create_infra(file_name):
                     _subnet = VPCController.create_subnet_in_container(db, _vpc.get_id(), sb_name, sb_cidr)
                 
                 print_rows.append("Containers data")
-                for _container_data in sb_data['servers']:
-                    print(_container_data)
-                    name = _container_data['name']
-                    image = _container_data['image']
-                    vcpu = _container_data['vcpu']
-                    mem = _container_data['mem']
-                    region = _container_data['region']
-                    weight = _container_data['weight']
-                    
-                    _cont = Container.find_by_name(db, name)
-                    if _cont is None:
-                        _cont = Container(name, image, region, vcpu, mem).save(db)
-                        default_route = IPUtils.get_default_subnet_gateway(db, _subnet.get_id(), _cont.region)
-                        logger.log_api_call(tenant_name,f"CreateInstance - [Create Instance:{name}]")
-                        ContainerController.create(db, _cont.get_id())
-                        ContainerController.connect_to_network(db, _cont.get_id(), _subnet.get_id(), default_route)
-                        _cont = Container.find_by_id(db, _cont.get_id())
-                        _cont_ip = Interface.find_by_id(db, _cont.interfaces[0]).ip_address
-                        _lb_ips.append({"ip_address": _cont_ip, "weight": weight})
-                        print_rows.append(f"{name} - {_cont_ip}")
+                if sb_data.get('servers', None) is not None:
+                    for _container_data in sb_data['servers']:
+                        print(_container_data)
+                        name = _container_data['name']
+                        image = _container_data['image']
+                        vcpu = _container_data['vcpu']
+                        mem = _container_data['mem']
+                        region = _container_data['region']
+                        weight = _container_data['weight']
+                        
+                        _cont = Container.find_by_name(db, name)
+                        if _cont is None:
+                            _cont = Container(name, image, region, vcpu, mem, vpc_id=_vpc.get_id()).save(db)
+                            default_route = IPUtils.get_default_subnet_gateway(db, _subnet.get_id(), _cont.region)
+                            logger.log_api_call(tenant_name,f"CreateInstance - [Create Instance:{name}]")
+                            ContainerController.create(db, _cont.get_id())
+                            ContainerController.connect_to_network(db, _cont.get_id(), _subnet.get_id(), default_route)
+                            _cont = Container.find_by_id(db, _cont.get_id())
+                            _cont_ip = Interface.find_by_id(db, _cont.interfaces[0]).ip_address
+                            _lb_ips.append({"ip_address": _cont_ip, "weight": weight})
+                            print_rows.append(f"{name} - {_cont_ip}")
             
             _vpc = VPC.find_by_id(db, _vpc.get_id())
             if not _vpc.lbs:

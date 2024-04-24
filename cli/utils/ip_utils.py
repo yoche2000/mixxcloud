@@ -2,9 +2,17 @@ from ipaddress import IPv4Address, ip_network
 import random
 from bson.objectid import ObjectId
 from models.subnet_model import Subnet
-from constants.infra_constants import REGION_MAPPING
+from constants.infra_constants import REGION_MAPPING, VRRP_CONFIG_FILE
+import csv
 
 class IPUtils:
+    @staticmethod
+    def setup_card(vpc_name, server1_ip, server2_ip, server1_name, server2_name, lb_ip, lb_interface, host1_ip, host2_ip):
+        with open(VRRP_CONFIG_FILE, 'a') as file:
+            row = [vpc_name, server1_ip, server2_ip, server1_name, server2_name, lb_ip, lb_interface, host1_ip, host2_ip]
+            csv_writer = csv.writer(file)
+            csv_writer.writerow(row)
+    
     @staticmethod
     def generate_mac():
         # Create a MAC address with the first octet even (unicast & globally unique)

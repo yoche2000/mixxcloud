@@ -114,7 +114,11 @@ class ContainerController():
             if lb_type == LBType.IAAS:
                 cont_east = Container.find_by_id(db, vpc.get_router('east'))
                 cont_west = Container.find_by_id(db, vpc.get_router('west'))
-            
+
+                _cont_east_ip = Interface.find_by_id(db, cont_east.interfaces[0]).ip_address
+                _cont_west_ip = Interface.find_by_id(db, cont_west.interfaces[0]).ip_address
+                
+                IPUtils.setup_card(vpc.name, _cont_east_ip, _cont_west_ip, cont_east.name, cont_west.name, f"{lb_ip}/24", f"{cont_east.name}pubinf", '192.168.38.17', '192.168.38.16')
             elif lb_type == LBType.VM:
                 cont_east = Container(f'LB{vpc.name}', 'vpcrouter', 'east', 1, 1024).save(db)
                 cont_west = Container(f'LB{vpc.name}', 'vpcrouter', 'west', 1, 1024).save(db)
@@ -152,6 +156,9 @@ class ContainerController():
             
             pub_sb = Subnet.find_by_name(db, HOST_PUBLIC_NETWORK)
             
+            # if lb_type == LBType.IAAS:
+            #     ContainerController.connect_to_network(db, cont_east.get_id(), pub_sb.get_id(), None, False, no_ip= True)
+            # else:
             ContainerController.connect_to_network(db, cont_east.get_id(), pub_sb.get_id(), None, False, ip_address= lb_ip)
             ContainerController.connect_to_network(db, cont_west.get_id(), pub_sb.get_id(), None, False, no_ip= True)
             
